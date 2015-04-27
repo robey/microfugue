@@ -1,4 +1,3 @@
 lib/
 node_modules/
-*.sublime-project
-*.sublime-workspace
+test/lib/

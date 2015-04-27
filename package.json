@@ -1,0 +1,43 @@
+{
+  "name": "tfjs",
+  "version": "1.0.0",
+  "description": "???",
+  "keywords": [
+    "ansi"
+  ],
+  "author": "Robey Pointer <robeypointer@gmail.com>",
+  "homepage": "https://github.com/robey/???",
+  "repository": {
+    "type": "git",
+    "url": "git://github.com/robey/???.git"
+  },
+  "licenses": [
+    {
+      "type": "Apache License 2.0",
+      "url": "http://www.apache.org/licenses/LICENSE-2.0.txt"
+    }
+  ],
+  "scripts": {
+    "clean": "rm -rf lib test/lib",
+    "distclean": "npm run clean && rm -rf node_modules npm-debug.log",
+    "prepublish": "babel --source-maps --out-dir lib src && babel --source-maps --out-dir test/lib test/src",
+    "test": "mocha -R spec --colors test/lib"
+  },
+  "dependencies": {
+    "antsy": "*",
+    "lodash": "*"
+  },
+  "devDependencies": {
+    "babel": "*",
+    "mocha": "*",
+    "mocha-sprinkles": "*",
+    "should": "*",
+    "should-promised": "*",
+    "source-map-support": "*"
+  },
+  "main": "./lib/???",
+  "files": [
+    "lib",
+    "test/lib"
+  ]
+}
