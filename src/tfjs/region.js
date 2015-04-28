@@ -73,6 +73,20 @@ class Region {
     return this._splitBy((newBox) => newBox.hsplit(ratio));
   }
 
+  /*
+   * Split into two, vertically, giving the top region exactly N lines.
+   */
+  splitLeft(n) {
+    return this._splitBy((newBox) => newBox.splitLeft(n));
+  }
+
+  /*
+   * Split into two, vertically, giving the bottom region exactly N lines.
+   */
+  splitRight(n) {
+    return this._splitBy((newBox) => newBox.splitRight(n));
+  }
+
   _splitBy(f) {
     const container = require("./container");
     const r = new container.Container(this.box, 2);

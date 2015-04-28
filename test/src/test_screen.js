@@ -50,4 +50,25 @@ describe("Screen", () => {
     r2.box.toString().should.eql("Box(left=8 top=0 right=30 bottom=28)");
   });
 
+  it("splitLeft", () => {
+    let s = new screen.Screen(40, 20);
+    s.region.box.toString().should.eql("Box(left=0 top=0 right=40 bottom=20)");
+    const [ r1, r2 ] = s.splitLeft(7);
+    r1.box.toString().should.eql("Box(left=0 top=0 right=7 bottom=20)");
+    r2.box.toString().should.eql("Box(left=7 top=0 right=40 bottom=20)");
+    s.resize(new box.Box(0, 0, 30, 28));
+    r1.box.toString().should.eql("Box(left=0 top=0 right=7 bottom=28)");
+    r2.box.toString().should.eql("Box(left=7 top=0 right=30 bottom=28)");
+  });
+
+  it("splitBottom", () => {
+    let s = new screen.Screen(40, 20);
+    s.region.box.toString().should.eql("Box(left=0 top=0 right=40 bottom=20)");
+    const [ r1, r2 ] = s.splitRight(7);
+    r1.box.toString().should.eql("Box(left=0 top=0 right=33 bottom=20)");
+    r2.box.toString().should.eql("Box(left=33 top=0 right=40 bottom=20)");
+    s.resize(new box.Box(0, 0, 30, 28));
+    r1.box.toString().should.eql("Box(left=0 top=0 right=23 bottom=28)");
+    r2.box.toString().should.eql("Box(left=23 top=0 right=30 bottom=28)");
+  });
 });
