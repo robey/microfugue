@@ -16,14 +16,14 @@ const CSI = "\u001b[";
  * region the size of the screen, but may be split horizontally or recursively.
  * (Each resulting region may also be recursively split.)
  *
- * - width: defaults to the TTY width, or 80 if there isn't a TTY
- * - height: defualts to the TTY height, or 24 if there isn't a TTY
+ * - cols: defaults to the TTY width, or 80 if there isn't a TTY
+ * - rows: defualts to the TTY height, or 24 if there isn't a TTY
  */
-class Screen extends container.Container {
-  constructor(width, height) {
-    if (width === undefined) width = process.stdout.columns || 80;
-    if (height === undefined) height = process.stdout.height || 24;
-    super(new box.Box(0, 0, width, height), 1);
+class Screen {
+  constructor(cols, rows) {
+    if (cols === undefined) cols = process.stdout.columns || 80;
+    if (rows === undefined) rows = process.stdout.rows || 24;
+    this.container = new container.Container(new box.Box(0, 0, cols, rows), 1);
   }
 
   toString() {
@@ -34,20 +34,20 @@ class Screen extends container.Container {
     return `${CSI}2J` + this.region.paint();
   }
 
-  resize(box) {
-    this.region.resize(box);
+  resize(cols, rows) {
+    this.container.resize(new box.Box(0, 0, cols, rows));
   }
 
   /*
    * The region covering this screen. It may be a container for recursively
    * split regions, so it may not have a canvas.
    */
-  get region() { return this._regions[0]; }
+  get region() { return this.container._regions[0]; }
 
   /*
    * Return a list of nested Region objects, in a predictable order.
    */
-  get regions() { return this.region.subRegions(); }
+  get regions() { return this.container.subRegions(); }
 
   // copies of the region splitters:
   vsplit(ratio) { return this.region.vsplit(ratio); }

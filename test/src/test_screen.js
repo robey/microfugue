@@ -12,7 +12,7 @@ describe("Screen", () => {
     const [ r1, r2 ] = s.vsplit(0.25);
     r1.box.toString().should.eql("Box(left=0 top=0 right=40 bottom=5)");
     r2.box.toString().should.eql("Box(left=0 top=5 right=40 bottom=20)");
-    s.resize(new box.Box(0, 0, 30, 28));
+    s.resize(30, 28);
     r1.box.toString().should.eql("Box(left=0 top=0 right=30 bottom=7)");
     r2.box.toString().should.eql("Box(left=0 top=7 right=30 bottom=28)");
   });
@@ -23,7 +23,7 @@ describe("Screen", () => {
     const [ r1, r2 ] = s.splitTop(7);
     r1.box.toString().should.eql("Box(left=0 top=0 right=40 bottom=7)");
     r2.box.toString().should.eql("Box(left=0 top=7 right=40 bottom=20)");
-    s.resize(new box.Box(0, 0, 30, 28));
+    s.resize(30, 28);
     r1.box.toString().should.eql("Box(left=0 top=0 right=30 bottom=7)");
     r2.box.toString().should.eql("Box(left=0 top=7 right=30 bottom=28)");
   });
@@ -34,7 +34,7 @@ describe("Screen", () => {
     const [ r1, r2 ] = s.splitBottom(7);
     r1.box.toString().should.eql("Box(left=0 top=0 right=40 bottom=13)");
     r2.box.toString().should.eql("Box(left=0 top=13 right=40 bottom=20)");
-    s.resize(new box.Box(0, 0, 30, 28));
+    s.resize(30, 28);
     r1.box.toString().should.eql("Box(left=0 top=0 right=30 bottom=21)");
     r2.box.toString().should.eql("Box(left=0 top=21 right=30 bottom=28)");
   });
@@ -45,7 +45,7 @@ describe("Screen", () => {
     const [ r1, r2 ] = s.hsplit(0.25);
     r1.box.toString().should.eql("Box(left=0 top=0 right=10 bottom=20)");
     r2.box.toString().should.eql("Box(left=10 top=0 right=40 bottom=20)");
-    s.resize(new box.Box(0, 0, 30, 28));
+    s.resize(30, 28);
     r1.box.toString().should.eql("Box(left=0 top=0 right=8 bottom=28)");
     r2.box.toString().should.eql("Box(left=8 top=0 right=30 bottom=28)");
   });
@@ -56,7 +56,7 @@ describe("Screen", () => {
     const [ r1, r2 ] = s.splitLeft(7);
     r1.box.toString().should.eql("Box(left=0 top=0 right=7 bottom=20)");
     r2.box.toString().should.eql("Box(left=7 top=0 right=40 bottom=20)");
-    s.resize(new box.Box(0, 0, 30, 28));
+    s.resize(30, 28);
     r1.box.toString().should.eql("Box(left=0 top=0 right=7 bottom=28)");
     r2.box.toString().should.eql("Box(left=7 top=0 right=30 bottom=28)");
   });
@@ -67,7 +67,7 @@ describe("Screen", () => {
     const [ r1, r2 ] = s.splitRight(7);
     r1.box.toString().should.eql("Box(left=0 top=0 right=33 bottom=20)");
     r2.box.toString().should.eql("Box(left=33 top=0 right=40 bottom=20)");
-    s.resize(new box.Box(0, 0, 30, 28));
+    s.resize(30, 28);
     r1.box.toString().should.eql("Box(left=0 top=0 right=23 bottom=28)");
     r2.box.toString().should.eql("Box(left=23 top=0 right=30 bottom=28)");
   });
