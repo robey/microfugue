@@ -71,4 +71,32 @@ describe("Screen", () => {
     r1.box.toString().should.eql("Box(left=0 top=0 right=23 bottom=28)");
     r2.box.toString().should.eql("Box(left=23 top=0 right=30 bottom=28)");
   });
+
+  it("return ordered list of regions for a deeper split", () => {
+    let s = new screen.Screen(80, 24);
+    const [ r1, r2 ] = s.splitBottom(4);
+    const [ r3, r4 ] = r1.splitRight(10);
+    const [ r5, r6 ] = r4.splitTop(2);
+
+    s.regions.map((r) => r.box.toString()).should.eql([
+      "Box(left=0 top=20 right=80 bottom=24)",
+      "Box(left=0 top=0 right=70 bottom=20)",
+      "Box(left=70 top=0 right=80 bottom=2)",
+      "Box(left=70 top=2 right=80 bottom=20)"
+    ]);
+  });
+
+  it("changeSiblingSplit", () => {
+    let s = new screen.Screen(80, 24);
+    const [ r1, r2 ] = s.splitBottom(4);
+    s.regions.map((r) => r.box.toString()).should.eql([
+      "Box(left=0 top=0 right=80 bottom=20)",
+      "Box(left=0 top=20 right=80 bottom=24)",
+    ]);
+    r2.changeSiblingSplit(5);
+    s.regions.map((r) => r.box.toString()).should.eql([
+      "Box(left=0 top=0 right=80 bottom=19)",
+      "Box(left=0 top=19 right=80 bottom=24)",
+    ]);
+  });
 });

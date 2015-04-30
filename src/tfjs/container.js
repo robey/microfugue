@@ -8,11 +8,14 @@ const _ = require("lodash");
  * It has an overall Box that covers all of the sub-regions.
  */
 class Container {
-  constructor(box, count = 0) {
+  constructor(box, count = 0, splitter, metric) {
     this._regions = [];
+    this._splitter = splitter;
+    this._metric = metric;
     for (let i = 0; i < count; i++) {
       this._regions.push(new region.Region(this, box));
     }
+    this.resize(box);
   }
 
   toString() {
@@ -24,14 +27,15 @@ class Container {
   }
 
   resize(box) {
+    this._box = box;
     if (this._regions.length == 0) return;
     if (this._regions.length == 1) return this._regions[0].resize(box);
-    const newBoxes = this._resize(box, this._regions.length);
+    const newBoxes = box[this._splitter](this._metric, this._regions.length);
     _.zip(this._regions, newBoxes).map(([ region, newBox ]) => region.resize(newBox));
   }
 
   subRegions() {
-    return Array.concat.apply([], this._regions.map((r) => r.subRegions()));
+    return [].concat.apply([], this._regions.map((r) => r.subRegions()));
   }
 
   _replace(region, newRegion) {
@@ -39,6 +43,20 @@ class Container {
       if (this._regions[i].id == region.id) this._regions.splice(i, 1);
     }
     this._regions.push(newRegion);
+  }
+
+  /*
+   * Change or set the split function used for resizing.
+   * - metric: the parameter passed to the split function
+   * - splitter: name of a function on `Box` called with `(metric, regionCount)`
+   *   where `regionCount` is the number of desired regions (all built-in
+   *   splitters ignore this and create only two regions) -- if null, use the
+   *   splitter previously configured
+   */
+  _changeSplit(metric, splitter) {
+    this._metric = metric;
+    if (splitter) this._splitter = splitter;
+    this.resize(this._box);
   }
 }
 

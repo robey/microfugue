@@ -3,6 +3,8 @@
 const antsy = require("antsy");
 const util = require("util");
 
+const CSI = "\u001b[";
+
 let RegionId = 1;
 
 /*
@@ -47,21 +49,21 @@ class Region {
    * Returns [ topRegion, bottomRegion ].
    */
   vsplit(ratio) {
-    return this._splitBy((newBox) => newBox.vsplit(ratio));
+    return this._splitBy("vsplit", ratio);
   }
 
   /*
    * Split into two, vertically, giving the top region exactly N lines.
    */
   splitTop(n) {
-    return this._splitBy((newBox) => newBox.splitTop(n));
+    return this._splitBy("splitTop", n);
   }
 
   /*
    * Split into two, vertically, giving the bottom region exactly N lines.
    */
   splitBottom(n) {
-    return this._splitBy((newBox) => newBox.splitBottom(n));
+    return this._splitBy("splitBottom", n);
   }
 
   /*
@@ -70,30 +72,38 @@ class Region {
    * Returns [ leftRegion, rightRegion ].
    */
   hsplit(ratio) {
-    return this._splitBy((newBox) => newBox.hsplit(ratio));
+    return this._splitBy("hsplit", ratio);
   }
 
   /*
    * Split into two, vertically, giving the top region exactly N lines.
    */
   splitLeft(n) {
-    return this._splitBy((newBox) => newBox.splitLeft(n));
+    return this._splitBy("splitLeft", n);
   }
 
   /*
    * Split into two, vertically, giving the bottom region exactly N lines.
    */
   splitRight(n) {
-    return this._splitBy((newBox) => newBox.splitRight(n));
+    return this._splitBy("splitRight", n);
   }
 
-  _splitBy(f) {
+  _splitBy(splitter, metric) {
     const container = require("./container");
-    const r = new container.Container(this.box, 2);
-    r._resize = f;
-    r.resize(this.box);
+    const r = new container.Container(this.box, 2, splitter, metric);
     this.parent._replace(this, r);
     return r._regions;
+  }
+
+  /*
+   * Tell the parent container to use a new split function for resizing.
+   * - metric: metric to pass to the splitter
+   * - splitter: name of the function on Box to call to split the container box
+   *   (null leaves the old splitter alone)
+   */
+  changeSiblingSplit(metric, splitter) {
+    this.parent._changeSplit(metric, splitter);
   }
 }
 

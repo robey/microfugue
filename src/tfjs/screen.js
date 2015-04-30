@@ -65,19 +65,19 @@ class Screen extends container.Container {
 
 
 function main() {
-  const screen = newScreen();
-  const [ r1, r2 ] = screen.splitBottom(3);
+  const s = new Screen();
+  const [ r1, r2 ] = s.splitRight(3);
   r1.canvas.backgroundColor("red").clear();
   r2.canvas.backgroundColor("blue").clear();
   process.on("SIGWINCH", () => {
-    screen.resize(new box.Box(0, 0, process.stdout.columns, process.stdout.rows));
+    s.resize(new box.Box(0, 0, process.stdout.columns, process.stdout.rows));
     r1.canvas.backgroundColor("red").clear();
     r2.canvas.backgroundColor("blue").clear();
   });
 
   function loop() {
-    console.log(screen.toString());
-    process.stdout.write(screen.paint());
+    console.log(s.toString());
+    process.stdout.write(s.paint());
     setTimeout(() => loop(), 1000);
   }
   loop();
