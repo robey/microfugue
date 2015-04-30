@@ -1,6 +1,6 @@
 "use strict";
 
-// StatusBar is the first line of the edit box
+// StatusBar is one line tall
 class StatusBar {
   constructor(region, fgColor, bgColor) {
     this.region = region;

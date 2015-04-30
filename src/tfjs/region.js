@@ -23,12 +23,16 @@ class Region {
     return `Region(${this.id}, ${this.box})`;
   }
 
+  moveTo(x, y) {
+    if (x < 0 || x >= this.box.width || y < 0 || y >= this.box.height) return "";
+    return `${CSI}${this.box.top + y + 1};${this.box.left + x + 1}H`;
+  }
+
   paint() {
     let out = "";
-    let y = this.box.top;
+    let y = 0;
     this.canvas.toStrings().forEach((line) => {
-      out += `${CSI}${y + 1};${this.box.left + 1}H`;
-      out += line;
+      out += this.moveTo(0, y) + line;
       y += 1;
     });
     return out;
