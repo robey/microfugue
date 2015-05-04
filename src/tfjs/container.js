@@ -40,7 +40,10 @@ class Container {
 
   _replace(region, newRegion) {
     for (let i = 0; i < this._regions.length; i++) {
-      if (this._regions[i].id == region.id) this._regions.splice(i, 1);
+      if (this._regions[i].id == region.id) {
+        this._regions[i] = newRegion;
+        return;
+      }
     }
     this._regions.push(newRegion);
   }

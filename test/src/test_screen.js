@@ -79,10 +79,10 @@ describe("Screen", () => {
     const [ r5, r6 ] = r4.splitTop(2);
 
     s.regions.map((r) => r.box.toString()).should.eql([
-      "Box(left=0 top=20 right=80 bottom=24)",
       "Box(left=0 top=0 right=70 bottom=20)",
       "Box(left=70 top=0 right=80 bottom=2)",
-      "Box(left=70 top=2 right=80 bottom=20)"
+      "Box(left=70 top=2 right=80 bottom=20)",
+      "Box(left=0 top=20 right=80 bottom=24)"
     ]);
   });
 
