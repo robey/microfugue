@@ -101,9 +101,7 @@ class EditBox extends events.EventEmitter {
 
   paint() {
     this.region.canvas.color(this.color).backgroundColor(this.backgroundColor).clear().at(0, 0).write(this.line);
-    const x = this.region.paint() + this.moveCursor();
-    console.log("PAINT! " + this.region.box.toString() + " / " + util.inspect(x) )
-    return x;
+    return this.region.paint() + this.moveCursor();
   }
 
   moveCursor(pos) {
