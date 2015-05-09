@@ -31,7 +31,8 @@ class Screen {
   }
 
   paint() {
-    return `${CSI}2J` + this.region.paint();
+    // since we're clearing the screen, we can omit drawing any blank lines.
+    return `${CSI}2J` + this.region.paint({ dropBlanks: true });
   }
 
   resize(cols, rows) {

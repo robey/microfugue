@@ -29,6 +29,8 @@ const STATE_ESC = 1;
 const STATE_CSI = 2;
 const CSI_TIMEOUT = 250;
 
+const DEFAULT_MAXLENGTH = 255;
+
 class CsiState {
   constructor() {
     this.state = STATE_NORMAL;
@@ -88,7 +90,9 @@ class EditBox extends events.EventEmitter {
     this.history = options.history || [];
     this.color = options.color || "#ccc";
     this.backgroundColor = options.backgroundColor || "black";
+    this.maxLength = options.maxLength || DEFAULT_MAXLENGTH;
     this.reset();
+    this.resize();
   }
 
   reset() {
@@ -99,9 +103,15 @@ class EditBox extends events.EventEmitter {
     this.saved = "";
   }
 
-  paint() {
+  resize() {
+    this.currentMaxLength = Math.min(this.maxLength, this.region.box.width * this.region.box.height);
+    if (this.line.length > this.currentMaxLength) this.line = this.line.slice(0, this.currentMaxLength);
+    if (this.pos > this.currentMaxLength) this.pos = this.currentMaxLength;
+  }
+
+  paint(options = {}) {
     this.region.canvas.color(this.color).backgroundColor(this.backgroundColor).clear().at(0, 0).write(this.line);
-    return this.region.paint() + this.moveCursor();
+    return this.region.paint(options) + this.moveCursor();
   }
 
   moveCursor(pos) {
@@ -147,22 +157,34 @@ class EditBox extends events.EventEmitter {
       case "B": return this.down();
       case "C": return this.right();
       case "D": return this.left();
+      case "F": return this.end();
+      case "H": return this.home();
       case "M-C": return this.wordRight();
       case "M-D": return this.wordLeft();
+      case "~1": return this.home();
       case "~3": return this.deleteForward();
+      case "~4": return this.end();
+      case "~5": return ""; // page-up
+      case "~6": return ""; // page-down
       // rus things: (control-arrows)
       case "1;5C": return this.wordRight();
       case "1;5D": return this.wordLeft();
     }
 
+    // FIXME: once things are working, turn this into no-op "".
     return this.insert("<" + command + ">");
-
-    return "";
   }
 
   insert(text) {
+    if (this.line.length == this.currentMaxLength) return "";
     this.line = this.line.slice(0, this.pos) + text + this.line.slice(this.pos);
     this.pos += text.length;
+    if (this.line.length > this.currentMaxLength) {
+      // truncate and redraw. boo.
+      this.line = this.line.slice(0, this.currentMaxLength);
+      if (this.pos > this.line.length) this.pos = this.line.length;
+      return this.paint();
+    }
     // when inserting in the middle, just redraw the whole thing.
     if (this.pos < this.line.length) return this.paint();
     return text;

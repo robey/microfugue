@@ -28,11 +28,11 @@ class Region {
     return `${CSI}${this.box.top + y + 1};${this.box.left + x + 1}H`;
   }
 
-  paint() {
+  paint(options = {}) {
     let out = "";
     let y = 0;
-    this.canvas.toStrings().forEach((line) => {
-      out += this.moveTo(0, y) + line;
+    this.canvas.toStrings(options).forEach((line) => {
+      if (line.length > 0) out += this.moveTo(0, y) + line;
       y += 1;
     });
     return out;

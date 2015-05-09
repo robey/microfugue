@@ -22,8 +22,8 @@ class Container {
     return "Container([" + this._regions.map((r) => r.toString()).join(", ") + "])";
   }
 
-  paint() {
-    return this._regions.map((r) => r.paint()).join("");
+  paint(options = {}) {
+    return this._regions.map((r) => r.paint(options)).join("");
   }
 
   resize(box) {
