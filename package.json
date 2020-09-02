@@ -18,26 +18,25 @@
     }
   ],
   "scripts": {
-    "clean": "rm -rf lib test/lib",
+    "build": "tsc",
+    "clean": "rm -rf lib",
     "distclean": "npm run clean && rm -rf node_modules npm-debug.log",
-    "prepublish": "babel --source-maps --out-dir lib src && babel --source-maps --out-dir test/lib test/src",
-    "test": "mocha -R spec --colors test/lib"
+    "prepare": "tsc",
+    "test": "npm run build && mocha -R spec --colors lib/test"
   },
   "dependencies": {
-    "antsy": "*",
-    "lodash": "*"
+    "antsy": "^2.1.0"
   },
   "devDependencies": {
-    "babel": "*",
-    "mocha": "*",
-    "mocha-sprinkles": "*",
-    "should": "*",
-    "should-promised": "*",
-    "source-map-support": "*"
+    "@types/mocha": "^8.0.3",
+    "@types/source-map-support": "^0.5.3",
+    "mocha": "^8.1.3",
+    "should": "^13.2.3",
+    "source-map-support": "^0.5.19",
+    "typescript": "^4.0.2"
   },
   "main": "./lib/???",
   "files": [
-    "lib",
-    "test/lib"
+    "lib"
   ]
 }

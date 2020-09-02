@@ -1,14 +1,12 @@
-const box = require("../../lib/tfjs/box");
-const region = require("../../lib/tfjs/region");
-const statusbar = require("../../lib/tfjs/statusbar");
-const util = require("util");
+import { Canvas } from "antsy";
+import { StatusBar } from "..";
 
-require("should");
-require("source-map-support").install();
+import "should";
+import "source-map-support/register";
 
 describe("StatusBar", () => {
-  const r = new region.Region(null, new box.Box(0, 0, 20, 10));
-  const bar = new statusbar.StatusBar(r, "white", "blue");
+  const r = new Canvas(20, 10).all();
+  const bar = new StatusBar(r, "white", "blue");
 
   it("builds a left/right", () => {
     bar.left = "monkeys";
