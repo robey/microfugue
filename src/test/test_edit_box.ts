@@ -20,6 +20,7 @@ describe("EditBox", () => {
   beforeEach(() => {
     canvas.all().clear();
     box.reset();
+    box.clearHistory();
     canvas.paint();
   });
 
@@ -107,14 +108,109 @@ describe("EditBox", () => {
   });
 
   it("C-w", async () => {
-
+    for (const ch of "this is some words") box.feed(Key.normal(0, ch));
+    escpaint(canvas).should.eql(`${CLEAR}this is some words`);
+    box.feed(Key.normal(Modifier.Control, "W"));
+    escpaint(canvas).should.eql(`[6D[K[C`);
+    box.feed(Key.normal(Modifier.Control, "W"));
+    escpaint(canvas).should.eql(`[6D[K[C`);
+    box.feed(Key.normal(Modifier.Control, "W"));
+    escpaint(canvas).should.eql(`[3D  [2D`);
+    box.feed(RETURN);
+    escpaint(canvas).should.eql(`[5D[K`);
+    (await asyncIter(box.events).take(1).collect()).should.eql([ "this " ]);
   });
 
   it("left/right word", async () => {
-
+    for (const ch of "this is some words") box.feed(Key.normal(0, ch));
+    escpaint(canvas).should.eql(`${CLEAR}this is some words`);
+    box.feed(new Key(Modifier.Control, KeyType.Left));
+    escpaint(canvas).should.eql(`[5D`);
+    box.feed(Key.normal(0, "q"));
+    escpaint(canvas).should.eql(`qwords[5D`);
+    box.feed(new Key(Modifier.Control, KeyType.Left));
+    box.feed(new Key(Modifier.Control, KeyType.Left));
+    box.feed(new Key(Modifier.Control, KeyType.Right));
+    escpaint(canvas).should.eql(`[2D`);
+    box.feed(new Key(Modifier.Control, KeyType.Left));
+    box.feed(new Key(Modifier.Control, KeyType.Left));
+    box.feed(new Key(Modifier.Control, KeyType.Right));
+    escpaint(canvas).should.eql(`[5D`);
+    box.feed(Key.normal(0, "h"));
+    escpaint(canvas).should.eql(`h some qwords[12D`);
+    box.feed(RETURN);
+    escpaint(canvas).should.eql(`[8D[K`);
+    (await asyncIter(box.events).take(1).collect()).should.eql([ "this ish some qwords" ]);
   });
 
-  it("history", async () => {
+  describe("history", () => {
+    it("remembers anything", async () => {
+      for (const ch of "first line") box.feed(Key.normal(0, ch));
+      box.feed(RETURN);
+      box.feed(new Key(0, KeyType.Up));
+      box.feed(RETURN);
+      for (const ch of "second line") box.feed(Key.normal(0, ch));
+      box.feed(RETURN);
+      box.feed(new Key(0, KeyType.Up));
+      box.feed(new Key(0, KeyType.Up));
+      box.feed(RETURN);
+      (await asyncIter(box.events).take(4).collect()).should.eql([
+        "first line",
+        "first line",
+        "second line",
+        "first line",
+      ]);
+    });
 
+    it("restores your typing", async () => {
+      for (const ch of "first line") box.feed(Key.normal(0, ch));
+      box.feed(RETURN);
+      for (const ch of "second line") box.feed(Key.normal(0, ch));
+      box.feed(new Key(0, KeyType.Up));
+      box.feed(new Key(0, KeyType.Down));
+      box.feed(RETURN);
+      (await asyncIter(box.events).take(2).collect()).should.eql([
+        "first line",
+        "second line",
+      ]);
+    });
+
+    it("replaces an old entry", async () => {
+      for (const ch of "first line") box.feed(Key.normal(0, ch));
+      box.feed(RETURN);
+      for (const ch of "second line") box.feed(Key.normal(0, ch));
+      box.feed(RETURN);
+      for (const ch of "first line") box.feed(Key.normal(0, ch));
+      box.feed(RETURN);
+      box.feed(new Key(0, KeyType.Up));
+      box.feed(new Key(0, KeyType.Up));
+      box.feed(new Key(0, KeyType.Up));
+      box.feed(RETURN);
+      (await asyncIter(box.events).take(4).collect()).should.eql([
+        "first line",
+        "second line",
+        "first line",
+        "second line",
+      ]);
+    });
+  });
+
+  it("bind", async () => {
+    let count1 = 0, count2 = 0, count3 = 0;
+    box.bind(new Key(0, KeyType.PageUp), () => { count1++; });
+    box.bind(new Key(0, KeyType.PageDown), () => { count2++; });
+    box.feed(new Key(0, KeyType.PageUp));
+    count1.should.eql(1);
+    count2.should.eql(0);
+    box.feed(new Key(0, KeyType.PageDown));
+    count1.should.eql(1);
+    count2.should.eql(1);
+
+    // old binding must be overwritten
+    box.bind(new Key(0, KeyType.PageUp), () => { count3++; });
+    box.feed(new Key(0, KeyType.PageUp));
+    count1.should.eql(1);
+    count2.should.eql(1);
+    count3.should.eql(1);
   });
 });

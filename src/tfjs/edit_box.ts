@@ -28,6 +28,9 @@ export class EditBox {
   historyIndex: number = 0;
   saved: string = "";
 
+  // allow custom key bindings
+  customBindings: [ Key, (key: Key, editBox: EditBox) => void ][] = [];
+
   events = new PushAsyncIterator<string>();
   keyParser = new KeyParser(keys => {
     for (const key of keys) this.feed(key);
@@ -42,11 +45,24 @@ export class EditBox {
     this.redraw();
   }
 
+  clearHistory() {
+    this.history = [];
+    this.historyIndex = 0;
+  }
+
+  bind(key: Key, f: (key: Key, editBox: EditBox) => void) {
+    const index = this.customBindings.findIndex(([ k, _ ]) => k.equals(key));
+    if (index >= 0) this.customBindings.splice(index, 1);
+    this.customBindings.push([ key, f ]);
+  }
+
   reset() {
     this.line = "";
     this.pos = 0;
     this.historyIndex = this.history.length;
     this.saved = "";
+    this.customBindings = [];
+    this.moveCursor();
   }
 
   resize() {
@@ -74,6 +90,11 @@ export class EditBox {
   }
 
   feed(key: Key) {
+    for (const [ k, f ] of this.customBindings) if (key.equals(k)) {
+      f(key, this);
+      return;
+    }
+
     if (key.modifiers == 0) {
       switch (key.type) {
         case KeyType.Backspace:
