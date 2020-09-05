@@ -35,12 +35,18 @@ export class ScrollView {
     return this.frameTop + this.bar.rows;
   }
 
+  get visiblePercent(): number {
+    return Math.floor(100 * this.frameBottom / this.content.rows);
+  }
+
   redraw() {
     this.drawScrollBar();
+    const y = Math.max(this.frame.rows - this.content.rows, 0);
+    this.frame.at(0, y).draw(this.content.clip(0, this.frameTop, this.frame.cols, this.frameBottom));
   }
 
   drawScrollBar() {
-    if (this.frameTop == 0 && this.frameBottom == this.content.rows) {
+    if (this.frameTop == 0 && this.frameBottom >= this.content.rows) {
       // no scrollbar
       this.bar.color(this.trackColor, this.backgroundColor);
       for (let y = 0; y < this.bar.rows; y++) this.bar.at(0, y).write(" ");
@@ -49,11 +55,34 @@ export class ScrollView {
 
     const grabbyTop = Math.round(this.bar.rows * this.frameTop / this.content.rows);
     const grabbyBottom = Math.round(this.bar.rows * this.frameBottom / this.content.rows);
-    if (grabbyTop == 0 && grabbyBottom)
 
     this.bar.color(this.trackColor, this.backgroundColor);
     for (let y = 0; y < this.bar.rows; y++) this.bar.at(0, y).write(TRACK);
     this.bar.color(this.barColor);
     for (let y = grabbyTop; y < grabbyBottom; y++) this.bar.at(0, y).write(BAR);
+  }
+
+  scrollUp(count: number = 1) {
+    if (this.frameTop == 0) return;
+    this.frameTop = Math.max(0, this.frameTop - count);
+    this.redraw();
+  }
+
+  scrollDown(count: number = 1) {
+    if (this.frameBottom == this.content.rows) return;
+    this.frameTop = Math.min(this.frameTop + count, this.content.rows - this.frame.rows);
+    this.redraw();
+  }
+
+  pageUp() {
+    if (this.frameTop == 0) return;
+    this.frameTop = Math.max(0, this.frameTop - this.frame.rows + 1);
+    this.redraw();
+  }
+
+  pageDown() {
+    if (this.frameBottom == this.content.rows) return;
+    this.frameTop = Math.min(this.frameTop + this.frame.rows - 1, this.content.rows - this.frame.rows);
+    this.redraw();
   }
 }
