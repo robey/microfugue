@@ -21,6 +21,7 @@ describe("EditBox", () => {
     canvas.all().clear();
     box.reset();
     box.clearHistory();
+    box.clearBindings();
     canvas.paint();
   });
 

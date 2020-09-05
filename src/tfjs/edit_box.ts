@@ -50,6 +50,10 @@ export class EditBox {
     this.historyIndex = 0;
   }
 
+  clearBindings() {
+    this.customBindings = [];
+  }
+
   bind(key: Key, f: (key: Key, editBox: EditBox) => void) {
     const index = this.customBindings.findIndex(([ k, _ ]) => k.equals(key));
     if (index >= 0) this.customBindings.splice(index, 1);
@@ -61,7 +65,6 @@ export class EditBox {
     this.pos = 0;
     this.historyIndex = this.history.length;
     this.saved = "";
-    this.customBindings = [];
     this.moveCursor();
   }
 
