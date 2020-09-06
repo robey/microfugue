@@ -36,7 +36,7 @@ export class ScrollView {
   }
 
   get visiblePercent(): number {
-    return Math.floor(100 * this.frameBottom / this.content.rows);
+    return Math.min(Math.floor(100 * this.frameBottom / this.content.rows), 100);
   }
 
   redraw() {
@@ -70,7 +70,7 @@ export class ScrollView {
 
   scrollDown(count: number = 1) {
     if (this.frameBottom == this.content.rows) return;
-    this.frameTop = Math.min(this.frameTop + count, this.content.rows - this.frame.rows);
+    this.frameTop = Math.max(0, Math.min(this.frameTop + count, this.content.rows - this.frame.rows));
     this.redraw();
   }
 
@@ -82,7 +82,7 @@ export class ScrollView {
 
   pageDown() {
     if (this.frameBottom == this.content.rows) return;
-    this.frameTop = Math.min(this.frameTop + this.frame.rows - 1, this.content.rows - this.frame.rows);
+    this.frameTop = Math.max(0, Math.min(this.frameTop + this.frame.rows - 1, this.content.rows - this.frame.rows));
     this.redraw();
   }
 }

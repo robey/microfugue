@@ -87,7 +87,30 @@ describe("ScrollView", () => {
     sv.frameBottom.should.eql(10);
     sv.visiblePercent.should.eql(40);
   });
+
+  it("ignores scrolling when the content view is smaller than the frame", () => {
+    const canvas = new Canvas(20, 10);
+    const sv = new ScrollView(canvas.all(), "red", "white", "black");
+    sv.content.resize(19, 5);
+
+    sv.frameTop.should.eql(0);
+    sv.frameBottom.should.eql(10);
+    sv.visiblePercent.should.eql(100);
+    sv.pageDown();
+    sv.frameTop.should.eql(0);
+    sv.frameBottom.should.eql(10);
+    sv.visiblePercent.should.eql(100);
+    sv.pageUp();
+    sv.frameTop.should.eql(0);
+    sv.frameBottom.should.eql(10);
+    sv.visiblePercent.should.eql(100);
+    sv.scrollDown();
+    sv.frameTop.should.eql(0);
+    sv.frameBottom.should.eql(10);
+    sv.visiblePercent.should.eql(100);
+    sv.scrollUp();
+    sv.frameTop.should.eql(0);
+    sv.frameBottom.should.eql(10);
+    sv.visiblePercent.should.eql(100);
+  });
 });
-
-
-// does it add things to the bottom, no the top
