@@ -10,6 +10,7 @@ export class ScrollView {
   frame: Region;
   bar: Region;
   frameTop = 0;
+  pinnedToBottom = true;
 
   constructor(region: Region, public trackColor: string, public barColor: string, public backgroundColor: string) {
     this.content = new Canvas(region.cols - 1, region.rows);
@@ -22,13 +23,14 @@ export class ScrollView {
     this.bar = grid.layoutAt(1, 0);
     this.frameTop = 0;
 
-    // content must always be as wide as the frame, and at least as tall
+    // content must always be as wide as the frame
     region.onResize(() => {
-      this.content.resize(region.cols - 1, Math.max(region.rows, this.content.rows));
+      this.content.resize(region.cols - 1, this.content.rows);
     });
 
     // when the canvas is updated, the view must be too
     this.content.onDirty(0, () => this.redraw());
+    this.content.all().onResize(() => this.redraw());
   }
 
   get frameBottom(): number {
@@ -40,6 +42,7 @@ export class ScrollView {
   }
 
   redraw() {
+    if (this.pinnedToBottom) this.frameTop = Math.max(0, this.content.rows - this.frame.rows);
     this.drawScrollBar();
     const y = Math.max(this.frame.rows - this.content.rows, 0);
     this.frame.at(0, y).draw(this.content.clip(0, this.frameTop, this.frame.cols, this.frameBottom));
@@ -65,24 +68,36 @@ export class ScrollView {
   scrollUp(count: number = 1) {
     if (this.frameTop == 0) return;
     this.frameTop = Math.max(0, this.frameTop - count);
+    this.pinnedToBottom = (this.frameBottom == this.content.rows);
     this.redraw();
   }
 
   scrollDown(count: number = 1) {
     if (this.frameBottom == this.content.rows) return;
     this.frameTop = Math.max(0, Math.min(this.frameTop + count, this.content.rows - this.frame.rows));
+    this.pinnedToBottom = (this.frameBottom == this.content.rows);
     this.redraw();
   }
 
   pageUp() {
     if (this.frameTop == 0) return;
     this.frameTop = Math.max(0, this.frameTop - this.frame.rows + 1);
+    this.pinnedToBottom = (this.frameBottom == this.content.rows);
     this.redraw();
   }
 
   pageDown() {
     if (this.frameBottom == this.content.rows) return;
     this.frameTop = Math.max(0, Math.min(this.frameTop + this.frame.rows - 1, this.content.rows - this.frame.rows));
+    this.pinnedToBottom = (this.frameBottom == this.content.rows);
+    this.redraw();
+  }
+
+  // the owner of the content canvas can hint to us when the content is
+  // moving (probably because old lines at the top are expiring)
+  adjustView(translate: (row: number) => number) {
+    this.frameTop = Math.max(0, Math.min(translate(this.frameTop), this.content.rows - this.frame.rows));
+    this.pinnedToBottom = (this.frameBottom == this.content.rows);
     this.redraw();
   }
 }

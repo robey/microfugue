@@ -38,8 +38,9 @@ describe("ScrollView", () => {
     sv.content.resize(19, 20);
     sv.content.all().at(0, 0).color("white").write("hello");
     sv.content.all().at(0, 19).color("white").write("goodbye");
+    sv.scrollUp(20);
 
-    // show bottom only, with scrollbar visible
+    // show top only, with scrollbar visible
     sv.redraw();
     sv.frameTop.should.eql(0);
     sv.frameBottom.should.eql(10);
@@ -62,6 +63,7 @@ describe("ScrollView", () => {
     const canvas = new Canvas(20, 10);
     const sv = new ScrollView(canvas.all(), "red", "white", "black");
     sv.content.resize(19, 25);
+    sv.scrollUp(100);
 
     sv.frameTop.should.eql(0);
     sv.frameBottom.should.eql(10);
@@ -112,5 +114,26 @@ describe("ScrollView", () => {
     sv.frameTop.should.eql(0);
     sv.frameBottom.should.eql(10);
     sv.visiblePercent.should.eql(100);
+  });
+
+  it("stays stuck to the bottom of the frame if the content grows", () => {
+    const canvas = new Canvas(20, 10);
+    const sv = new ScrollView(canvas.all(), "red", "white", "black");
+
+    sv.content.resize(sv.content.cols, 14);
+    sv.frameTop.should.eql(4);
+    sv.frameBottom.should.eql(14);
+  });
+
+  it("adjustView", () => {
+    const canvas = new Canvas(20, 10);
+    const sv = new ScrollView(canvas.all(), "red", "white", "black");
+    sv.content.resize(19, 25);
+    sv.scrollUp(100);
+    sv.scrollDown(5);
+    sv.frameTop.should.eql(5);
+
+    sv.adjustView(row => row - 3);
+    sv.frameTop.should.eql(2);
   });
 });
