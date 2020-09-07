@@ -96,6 +96,7 @@ export class ScrollView {
   // the owner of the content canvas can hint to us when the content is
   // moving (probably because old lines at the top are expiring)
   adjustView(translate: (row: number) => number) {
+    if (this.pinnedToBottom) return;
     this.frameTop = Math.max(0, Math.min(translate(this.frameTop), this.content.rows - this.frame.rows));
     this.pinnedToBottom = (this.frameBottom == this.content.rows);
     this.redraw();

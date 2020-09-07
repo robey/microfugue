@@ -95,10 +95,4 @@ describe("LogView", () => {
     canvas.resize(21, canvas.rows);
     passed.should.eql(true);
   });
-
 });
-
-
-
-
-// does it scroll down when we're at the bottom and new content is added
