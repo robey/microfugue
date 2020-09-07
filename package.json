@@ -25,7 +25,7 @@
     "test": "npm run build && mocha -R spec --colors lib/test"
   },
   "dependencies": {
-    "antsy": "^2.3.0"
+    "antsy": "^2.4.0"
   },
   "devDependencies": {
     "@types/mocha": "^8.0.3",
