@@ -214,4 +214,16 @@ describe("EditBox", () => {
     count2.should.eql(1);
     count3.should.eql(1);
   });
+
+  it("resize", async () => {
+    const canvas = new Canvas(20, 3);
+    const region = canvas.clip(0, 1, 20, 3);
+    const box = new EditBox(region, { color: "white", maxHistory: 5 });
+    for (const ch of "hello") box.feed(Key.normal(0, ch));
+    escpaint(canvas).should.eql("[37m[40m[2J[H[B[38;5;15mhello");
+
+    canvas.resize(15, 3);
+    region.resize(0, 1, 15, 3);
+    escpaint(canvas).should.eql("[37m[40m[2J[H[B[38;5;15mhello");
+  });
 });

@@ -26,6 +26,7 @@ export class ScrollView {
     // content must always be as wide as the frame
     region.onResize(() => {
       this.content.resize(region.cols - 1, this.content.rows);
+      this.redraw();
     });
 
     // when the canvas is updated, the view must be too
@@ -42,6 +43,7 @@ export class ScrollView {
   }
 
   redraw() {
+    this.frame.clear();
     if (this.pinnedToBottom) this.frameTop = Math.max(0, this.content.rows - this.frame.rows);
     this.drawScrollBar();
     const y = Math.max(this.frame.rows - this.content.rows, 0);

@@ -38,6 +38,7 @@ export class EditBox {
 
   constructor(public region: Region, options: Partial<EditBoxConfig> = {}) {
     this.region = region;
+    this.region.onResize(() => this.resize());
     this.config = Object.assign({}, DEFAULT_CONFIG, options);
     this.history = this.config.history.slice();
     this.reset();
@@ -72,6 +73,7 @@ export class EditBox {
     this.maxLength = Math.min(this.config.maxLength, this.region.cols * this.region.rows - 1);
     if (this.line.length > this.maxLength) this.line = this.line.slice(0, this.maxLength);
     if (this.pos > this.maxLength) this.pos = this.maxLength;
+    this.redraw();
   }
 
   redraw() {
@@ -134,8 +136,6 @@ export class EditBox {
               return this.home();
             case "B":
               return this.left();
-            case "C":
-              process.exit(0);
             case "D":
               return this.deleteForward();
             case "E":
