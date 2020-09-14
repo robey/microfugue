@@ -1,5 +1,6 @@
 import { Canvas } from "antsy";
 import { wrapText, LogView } from "../tfjs/log_view";
+import { RichText } from "../tfjs/rich_text";
 
 import "should";
 import "source-map-support/register";
@@ -8,13 +9,16 @@ const escInline = (c: Canvas): string => c.paintInline().replace(/\u001b\[/g, "[
 
 describe("LogView", () => {
   it("wrapText", () => {
-    const text1 = "turn off the television";
-    wrapText(text1, 50).should.eql([ text1 ]);
-    wrapText(text1, 20).should.eql([ "turn off the ", "television" ]);
-    wrapText(text1, 5).should.eql([ "turn ", "off ", "the ", "tele-", "visi-", "on" ]);
+    const text1 = RichText.string("777", "turn off the television");
+    wrapText(text1, 50).map(x => x.toString()).should.eql([ "{777:turn off the television}" ]);
+    wrapText(text1, 20).map(x => x.toString()).should.eql([ "{777:turn off the }", "{777:television}" ]);
+    wrapText(text1, 5).map(x => x.toString()).should.eql([
+      "{777:turn }", "{777:off }", "{777:the }", "{777:telev}", "{777:ision}"
+    ]);
 
-    wrapText("monosyllabicism", 10).should.eql([ "monosylla-", "bicism" ]);
-    wrapText("monosyllabicism", 8).should.eql([ "monosyl-", "labicism" ]);
+    const text2 = RichText.string("777", "monosyllabicism");
+    wrapText(text2, 10).map(x => x.toString()).should.eql([ "{777:monosyllab}", "{777:icism}" ]);
+    wrapText(text2, 8).map(x => x.toString()).should.eql([ "{777:monosyll}", "{777:abicism}" ]);
   });
 
   it("add things at the bottom", () => {
@@ -22,7 +26,7 @@ describe("LogView", () => {
     const view = new LogView(canvas);
     view.add("hello");
     view.add("second");
-    escInline(canvas).should.eql("[40m[37mhello               [m\n[40m[37msecond              [m\n");
+    escInline(canvas).should.eql("[40m[38;5;248mhello               [m\n[40m[38;5;248msecond              [m\n");
   });
 
   it("resizes horizontally", () => {
@@ -32,26 +36,26 @@ describe("LogView", () => {
     view.add("second line");
     canvas.rows.should.eql(3);
     escInline(canvas).should.eql(
-      "[40m[37mturn off the        [m\n" +
-      "[40m[37mtelevision          [m\n" +
-      "[40m[37msecond line         [m\n"
+      "[40m[38;5;248mturn off the        [m\n" +
+      "[40m[38;5;248mtelevision          [m\n" +
+      "[40m[38;5;248msecond line         [m\n"
     );
 
     canvas.resize(10, canvas.rows);
     canvas.rows.should.eql(5);
     escInline(canvas).should.eql(
-      "[40m[37mturn off  [m\n" +
-      "[40m[37mthe       [m\n" +
-      "[40m[37mtelevision[m\n" +
-      "[40m[37msecond    [m\n" +
-      "[40m[37mline      [m\n"
+      "[40m[38;5;248mturn off  [m\n" +
+      "[40m[38;5;248mthe       [m\n" +
+      "[40m[38;5;248mtelevision[m\n" +
+      "[40m[38;5;248msecond    [m\n" +
+      "[40m[38;5;248mline      [m\n"
     );
 
     canvas.resize(25, canvas.rows);
     canvas.rows.should.eql(2);
     escInline(canvas).should.eql(
-      "[40m[37mturn off the television  [m\n" +
-      "[40m[37msecond line              [m\n"
+      "[40m[38;5;248mturn off the television  [m\n" +
+      "[40m[38;5;248msecond line              [m\n"
     );
   });
 

@@ -1,13 +1,16 @@
-import { Canvas } from "antsy";
+import { Canvas, Region } from "antsy";
+import { RichText } from "./rich_text";
 
 export interface LogViewConfig {
   maxLines: number;
   wordWrap: boolean;
+  defaultColor: string;
 }
 
 const DEFAULT_CONFIG: LogViewConfig = {
   maxLines: 100,
   wordWrap: true,
+  defaultColor: "aaa",  // vga white
 };
 
 export interface ContentPositionListener {
@@ -18,9 +21,9 @@ export interface ContentPositionListener {
 export class LogView {
   config: LogViewConfig;
   cols!: number;
-  lines: string[] = [];
+  lines: RichText[] = [];
   // cache:
-  wrappedLines: string[][] = [];
+  wrappedLines: RichText[][] = [];
 
   // we can indicate to something like a ScrollView (hint hint) when
   // the content has lost lines from the top or added some to the bottom:
@@ -56,8 +59,12 @@ export class LogView {
   }
 
   add(line: string) {
-    this.lines.push(line);
-    this.wrappedLines.push(wrapText(line, this.canvas.cols, this.config.wordWrap));
+    this.addText(RichText.string(this.config.defaultColor, line));
+  }
+
+  addText(text: RichText) {
+    this.lines.push(text);
+    this.wrappedLines.push(wrapText(text, this.canvas.cols, this.config.wordWrap));
     if (this.lines.length > this.config.maxLines) {
       this.lines.shift();
       const discarded = this.wrappedLines.shift();
@@ -69,33 +76,42 @@ export class LogView {
   }
 
   redraw() {
-    const allLines: string[] = ([] as string[]).concat(...this.wrappedLines);
+    const allLines: RichText[] = ([] as RichText[]).concat(...this.wrappedLines);
     this.canvas.resize(this.canvas.cols, allLines.length);
-    allLines.forEach((line, i) => this.canvas.all().at(0, i).clearToEndOfLine().write(line));
+    const region = this.canvas.all();
+    allLines.forEach((line, i) => {
+      region.at(0, i).clearToEndOfLine();
+      render(region, line);
+    });
   }
 }
 
 
-export function wrapText(text: string, width: number, wordWrap: boolean = true): string[] {
-  const rv: string[] = [];
-  while (text.length > width) {
-    let i = width;
-    while (wordWrap && i > 0 && text[i - 1] != " " && text[i - 1] != "-") i--;
-    if (i == 0) {
-      // give up.
-      rv.push(text.slice(0, width - 1) + "-");
-      text = text.slice(width - 1);
+function render(region: Region, text: RichText) {
+  for (const span of text.spans) {
+    region.color(text.color);
+    if (typeof span === "string") {
+      region.write(span);
     } else {
-      rv.push(text.slice(0, i));
-      text = text.slice(i);
+      render(region, span);
     }
+  }
+}
+
+export function wrapText(text: RichText, width: number, wordWrap: boolean = true): RichText[] {
+  const rv: RichText[] = [];
+  while (text.length > width) {
+    const i = wordWrap ? (text.findWordWrap(width) ?? width) : width;
+    const [ left, right ] = text.split(i);
+    rv.push(left);
+    text = right;
   }
   if (text.length > 0) rv.push(text);
   return rv;
 }
 
 // returns line # and # of rows within the line
-function rowToLine(wrappedLines: string[][], row: number): [ number, number ] {
+function rowToLine(wrappedLines: RichText[][], row: number): [ number, number ] {
   let i = 0, rows = 0;
   while (i < wrappedLines.length) {
     if (rows + wrappedLines[i].length > row) break;
@@ -105,6 +121,6 @@ function rowToLine(wrappedLines: string[][], row: number): [ number, number ] {
   return [ i, row - rows ];
 }
 
-function lineToRow(wrappedLines: string[][], line: number): number {
+function lineToRow(wrappedLines: RichText[][], line: number): number {
   return wrappedLines.slice(0, Math.max(line - 1, 0)).reduce((sum, list) => sum + list.length, 0);
 }
