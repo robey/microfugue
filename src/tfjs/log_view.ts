@@ -5,6 +5,7 @@ export interface LogViewConfig {
   maxLines: number;
   wordWrap: boolean;
   defaultColor: string;
+  colorAliases?: Map<string, string>;
 }
 
 const DEFAULT_CONFIG: LogViewConfig = {
@@ -81,19 +82,20 @@ export class LogView {
     const region = this.canvas.all();
     allLines.forEach((line, i) => {
       region.at(0, i).clearToEndOfLine();
-      render(region, line);
+      render(region, line, this.config.colorAliases);
     });
   }
 }
 
 
-function render(region: Region, text: RichText) {
+function render(region: Region, text: RichText, colorAliases?: Map<string, string>) {
   for (const span of text.spans) {
-    region.color(text.color);
+    const color = colorAliases?.get(text.color) ?? text.color;
+    region.color(color);
     if (typeof span === "string") {
       region.write(span);
     } else {
-      render(region, span);
+      render(region, span, colorAliases);
     }
   }
 }

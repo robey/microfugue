@@ -99,4 +99,11 @@ describe("LogView", () => {
     canvas.resize(21, canvas.rows);
     passed.should.eql(true);
   });
+
+  it("allows custom color names", () => {
+    const canvas = new Canvas(20, 10);
+    const view = new LogView(canvas, { maxLines: 20, colorAliases: new Map([[ "mars", "f00" ] ]) });
+    view.addText(RichText.parse("Welcome to {mars:Mars}", "777"));
+    escInline(canvas).should.eql("[40m[38;5;243mWelcome to [38;5;9mMars[37m     [m\n");
+  });
 });
