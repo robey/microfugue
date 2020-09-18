@@ -102,13 +102,15 @@ function render(region: Region, text: RichText, colorAliases?: Map<string, strin
 
 export function wrapText(text: RichText, width: number, wordWrap: boolean = true): RichText[] {
   const rv: RichText[] = [];
+  let didAnything = false;
   while (text.length > width) {
     const i = wordWrap ? (text.findWordWrap(width) ?? width) : width;
     const [ left, right ] = text.split(i);
     rv.push(left);
     text = right;
+    didAnything = true;
   }
-  if (text.length > 0) rv.push(text);
+  if (text.length > 0 || !didAnything) rv.push(text);
   return rv;
 }
 

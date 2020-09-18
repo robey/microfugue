@@ -106,4 +106,13 @@ describe("LogView", () => {
     view.addText(RichText.parse("Welcome to {mars:Mars}", "777"));
     escInline(canvas).should.eql("[40m[38;5;243mWelcome to [38;5;9mMars[37m     [m\n");
   });
+
+  it("adds blank lines", () => {
+    const canvas = new Canvas(6, 10);
+    const view = new LogView(canvas, { maxLines: 20 });
+    view.addText(RichText.parse("start", "777"));
+    view.addText(RichText.parse("", "777"));
+    view.addText(RichText.parse("end", "777"));
+    escInline(canvas).should.eql("[40m[38;5;243mstart [m\n[40m[38;5;243m      [m\n[40m[38;5;243mend   [m\n");
+  });
 });
