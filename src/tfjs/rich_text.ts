@@ -29,7 +29,7 @@ export class RichText {
         i++;
       }
       if (start == i) return undefined;
-      return s.slice(start, i);
+      return s.slice(start, i).replace(/\\\{/g, "{");
     };
 
     // return the color name in a `{color:` segment, or undefined if it's
