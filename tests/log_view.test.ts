@@ -1,6 +1,5 @@
 import { Canvas } from "antsy";
-import { wrapText, LogView } from "../tfjs/log_view";
-import { RichText } from "../tfjs/rich_text";
+import { LogView, RichText, wrapText } from "../src";
 
 import "should";
 import "source-map-support/register";

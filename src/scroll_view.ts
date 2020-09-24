@@ -3,16 +3,40 @@ import { Canvas, GridLayout, Region } from "antsy";
 const TRACK = "\u2502";
 const BAR = "\u2588";
 
+export interface ScrollViewConfig {
+  trackColor: string;
+  barColor: string;
+  backgroundColor: string;
+
+  // in case you want to customize the chars used to draw the scrollbar:
+  trackChar: string;
+  barChar: string;
+
+  // hide the scrollbar when it's not needed?
+  autoHide: boolean;
+}
+
+const DEFAULT_CONFIG: ScrollViewConfig = {
+  trackColor: "777",
+  barColor: "777",
+  backgroundColor: "000",
+  trackChar: TRACK,
+  barChar: BAR,
+  autoHide: true,
+};
+
 // turn a region into a scrolling frame that views part of a taller (in rows)
 // canvas
 export class ScrollView {
+  config: ScrollViewConfig;
   content: Canvas;
   frame: Region;
   bar: Region;
   frameTop = 0;
   pinnedToBottom = true;
 
-  constructor(region: Region, public trackColor: string, public barColor: string, public backgroundColor: string) {
+  constructor(region: Region, options: Partial<ScrollViewConfig>) {
+    this.config = Object.assign({}, DEFAULT_CONFIG, options);
     this.content = new Canvas(region.cols - 1, region.rows);
     const grid = new GridLayout(
       region,
@@ -53,18 +77,19 @@ export class ScrollView {
   drawScrollBar() {
     if (this.frameTop == 0 && this.frameBottom >= this.content.rows) {
       // no scrollbar
-      this.bar.color(this.trackColor, this.backgroundColor);
-      for (let y = 0; y < this.bar.rows; y++) this.bar.at(0, y).write(" ");
+      this.bar.color(this.config.trackColor, this.config.backgroundColor);
+      const ch = this.config.autoHide ? " " : this.config.trackChar;
+      for (let y = 0; y < this.bar.rows; y++) this.bar.at(0, y).write(ch);
       return;
     }
 
     const grabbyTop = Math.round(this.bar.rows * this.frameTop / this.content.rows);
     const grabbyBottom = Math.round(this.bar.rows * this.frameBottom / this.content.rows);
 
-    this.bar.color(this.trackColor, this.backgroundColor);
-    for (let y = 0; y < this.bar.rows; y++) this.bar.at(0, y).write(TRACK);
-    this.bar.color(this.barColor);
-    for (let y = grabbyTop; y < grabbyBottom; y++) this.bar.at(0, y).write(BAR);
+    this.bar.color(this.config.trackColor, this.config.backgroundColor);
+    for (let y = 0; y < this.bar.rows; y++) this.bar.at(0, y).write(this.config.trackChar);
+    this.bar.color(this.config.barColor);
+    for (let y = grabbyTop; y < grabbyBottom; y++) this.bar.at(0, y).write(this.config.barChar);
   }
 
   scrollUp(count: number = 1) {

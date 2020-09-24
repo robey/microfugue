@@ -7,9 +7,9 @@
     "sourceMap": true,
     "noImplicitAny": true,
     "noImplicitReturns": true,
-    "rootDir": "src/",
     "outDir": "lib/",
     "declaration": true,
     "declarationDir": "lib/"
   },
+  "include": [ "src/**/*.ts" ],
 }

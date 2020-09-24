@@ -3,7 +3,9 @@
   "version": "0.5.0",
   "description": "a small library for creating UX elements in ansi-compatible terminals",
   "keywords": [
-    "antsy", "ansi", "terminal"
+    "antsy",
+    "ansi",
+    "terminal"
   ],
   "author": "Robey Pointer <robeypointer@gmail.com>",
   "homepage": "https://github.com/robey/microfugue",
@@ -22,7 +24,7 @@
     "clean": "rm -rf lib",
     "distclean": "npm run clean && rm -rf node_modules npm-debug.log",
     "prepare": "tsc",
-    "test": "npm run build && mocha -R spec --colors lib/test"
+    "test": "mocha -r ts-node/register tests/**/*.test.ts"
   },
   "dependencies": {
     "antsy": "^2.4.0",
@@ -35,6 +37,7 @@
     "mocha": "^8.1.3",
     "should": "^13.2.3",
     "source-map-support": "^0.5.19",
+    "ts-node": "^9.0.0",
     "typescript": "^4.0.2"
   },
   "main": "./lib/index.js",

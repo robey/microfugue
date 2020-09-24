@@ -1,15 +1,15 @@
-import { Canvas } from "antsy";
-import { ScrollView } from "../tfjs/scroll_view";
-
 import "should";
-import "source-map-support/register";
+import { Canvas } from "antsy";
+import { ScrollView } from "../src";
+import { ScrollViewConfig } from "../src/scroll_view";
 
 const escpaint = (c: Canvas): string => c.paint().replace(/\u001b\[/g, "[");
+const STANDARD_OPTIONS: Partial<ScrollViewConfig> = { backgroundColor: "black", trackColor: "red", barColor: "white" };
 
 describe("ScrollView", () => {
   it("hides", () => {
     const canvas = new Canvas(20, 10);
-    const sv = new ScrollView(canvas.all(), "red", "white", "black");
+    const sv = new ScrollView(canvas.all(), STANDARD_OPTIONS);
     sv.content.resize(19, 10);
     sv.redraw();
 
@@ -19,9 +19,21 @@ describe("ScrollView", () => {
     escpaint(canvas).should.eql("[37m[40m[2J[H");
   });
 
+  it("doesn't hide", () => {
+    const canvas = new Canvas(20, 5);
+    const sv = new ScrollView(canvas.all(), Object.assign({}, STANDARD_OPTIONS, { autoHide: false }));
+    sv.content.resize(19, 5);
+    sv.redraw();
+
+    // everything should be on display, and one empty track
+    sv.frameTop.should.eql(0);
+    sv.frameBottom.should.eql(5);
+    escpaint(canvas).should.eql("[37m[40m[2J[H[19C[38;5;9m│[2;20H│[3;20H│[4;20H│[5;20H│[H");
+  });
+
   it("pushes small content to the bottom", () => {
     const canvas = new Canvas(20, 10);
-    const sv = new ScrollView(canvas.all(), "red", "white", "black");
+    const sv = new ScrollView(canvas.all(), STANDARD_OPTIONS);
     sv.content.resize(19, 1);
     sv.content.all().at(0, 0).color("white").write("hello");
     sv.redraw();
@@ -34,7 +46,7 @@ describe("ScrollView", () => {
 
   it("correctly draws the scrollbar", () => {
     const canvas = new Canvas(20, 10);
-    const sv = new ScrollView(canvas.all(), "red", "white", "black");
+    const sv = new ScrollView(canvas.all(), STANDARD_OPTIONS);
     sv.content.resize(19, 20);
     sv.content.all().at(0, 0).color("white").write("hello");
     sv.content.all().at(0, 19).color("white").write("goodbye");
@@ -61,7 +73,7 @@ describe("ScrollView", () => {
 
   it("page up/down", () => {
     const canvas = new Canvas(20, 10);
-    const sv = new ScrollView(canvas.all(), "red", "white", "black");
+    const sv = new ScrollView(canvas.all(), STANDARD_OPTIONS);
     sv.content.resize(19, 25);
     sv.scrollUp(100);
 
@@ -92,7 +104,7 @@ describe("ScrollView", () => {
 
   it("ignores scrolling when the content view is smaller than the frame", () => {
     const canvas = new Canvas(20, 10);
-    const sv = new ScrollView(canvas.all(), "red", "white", "black");
+    const sv = new ScrollView(canvas.all(), STANDARD_OPTIONS);
     sv.content.resize(19, 5);
 
     sv.frameTop.should.eql(0);
@@ -118,7 +130,7 @@ describe("ScrollView", () => {
 
   it("stays stuck to the bottom of the frame if the content grows", () => {
     const canvas = new Canvas(20, 10);
-    const sv = new ScrollView(canvas.all(), "red", "white", "black");
+    const sv = new ScrollView(canvas.all(), STANDARD_OPTIONS);
 
     sv.content.resize(sv.content.cols, 14);
     sv.frameTop.should.eql(4);
@@ -127,7 +139,7 @@ describe("ScrollView", () => {
 
   it("adjustView", () => {
     const canvas = new Canvas(20, 10);
-    const sv = new ScrollView(canvas.all(), "red", "white", "black");
+    const sv = new ScrollView(canvas.all(), STANDARD_OPTIONS);
     sv.content.resize(19, 25);
     sv.scrollUp(100);
     sv.scrollDown(5);

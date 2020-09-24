@@ -1,4 +1,4 @@
-import { RichText } from "../tfjs/rich_text";
+import { RichText } from "../src";
 
 import "should";
 import "source-map-support/register";
