@@ -1,15 +1,15 @@
 {
-  "name": "tfjs",
-  "version": "1.0.0",
-  "description": "???",
+  "name": "microfugue",
+  "version": "0.5.0",
+  "description": "a small library for creating UX elements in ansi-compatible terminals",
   "keywords": [
-    "ansi"
+    "antsy", "ansi", "terminal"
   ],
   "author": "Robey Pointer <robeypointer@gmail.com>",
-  "homepage": "https://github.com/robey/???",
+  "homepage": "https://github.com/robey/microfugue",
   "repository": {
     "type": "git",
-    "url": "git://github.com/robey/???.git"
+    "url": "git://github.com/robey/microfugue.git"
   },
   "licenses": [
     {
@@ -26,7 +26,7 @@
   },
   "dependencies": {
     "antsy": "^2.4.0",
-    "ballvalve": "^3.1.0"
+    "ballvalve": "^3.1.1"
   },
   "devDependencies": {
     "@types/mocha": "^8.0.3",
