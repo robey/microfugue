@@ -24,7 +24,7 @@
     "clean": "rm -rf lib",
     "distclean": "npm run clean && rm -rf node_modules npm-debug.log",
     "prepare": "tsc",
-    "test": "mocha -r ts-node/register tests/**/*.test.ts"
+    "test": "npm run build && mocha -r ts-node/register tests/**/*.test.ts"
   },
   "dependencies": {
     "antsy": "^2.4.0",

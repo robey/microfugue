@@ -6,7 +6,7 @@ import "should";
 import "source-map-support/register";
 
 const CLEAR = `[38;5;15m`;
-const RESET = `[38;5;252m${CLEAR}`;
+const DIM = `[38;5;243m`;
 
 const BS = new Key(0, KeyType.Backspace);
 const RETURN = new Key(0, KeyType.Return);
@@ -225,5 +225,72 @@ describe("EditBox", () => {
     canvas.resize(15, 3);
     region.resize(0, 1, 15, 3);
     escpaint(canvas).should.eql("[37m[40m[2J[H[B[38;5;15mhello");
+  });
+
+  describe("suggestions", () => {
+    it("rotate", async () => {
+      box.autoComplete = () => [ "a", "b", "c" ];
+      for (const ch of "hello") box.feed(Key.normal(0, ch));
+
+      box.feed(new Key(0, KeyType.Tab));
+      escpaint(canvas).should.eql(`${CLEAR}hello${DIM}a[D`);
+      box.feed(new Key(0, KeyType.Tab));
+      escpaint(canvas).should.eql(`b[D`);
+      box.feed(new Key(0, KeyType.Tab));
+      escpaint(canvas).should.eql(`c[D`);
+      box.feed(new Key(0, KeyType.Tab));
+      escpaint(canvas).should.eql(`a[D`);
+
+      box.feed(new Key(0, KeyType.Right));
+      escpaint(canvas).should.eql(`[38;5;15ma`);
+      box.feed(RETURN);
+      (await asyncIter(box.events).take(1).collect()).should.eql([
+        "helloa",
+      ]);
+    });
+
+    it("mutual prefix", async () => {
+      box.autoComplete = () => [ "sure", "sles" ];
+      for (const ch of "mea") box.feed(Key.normal(0, ch));
+
+      box.feed(new Key(0, KeyType.Tab));
+      escpaint(canvas).should.eql(`${CLEAR}meas${DIM}ure[3D`);
+      box.feed(new Key(0, KeyType.Tab));
+      escpaint(canvas).should.eql(`les[3D`);
+      box.feed(new Key(0, KeyType.Tab));
+      escpaint(canvas).should.eql(`ure[3D`);
+    });
+
+    it("only one", async () => {
+      box.autoComplete = () => [ "less" ];
+      for (const ch of "hope") box.feed(Key.normal(0, ch));
+
+      box.feed(new Key(0, KeyType.Tab));
+      escpaint(canvas).should.eql(`${CLEAR}hopeless`);
+    });
+
+    it("nothing", async () => {
+      box.autoComplete = () => undefined;
+      box.feed(new Key(0, KeyType.Tab));
+      escpaint(canvas).should.eql(``);
+      box.feed(new Key(0, KeyType.Right));
+      escpaint(canvas).should.eql(``);
+    });
+
+    it("reset on typing", async () => {
+      box.autoComplete = () => [ "sure", "ch" ];
+      for (const ch of "mea") box.feed(Key.normal(0, ch));
+
+      box.feed(new Key(0, KeyType.Tab));
+      escpaint(canvas).should.eql(`${CLEAR}mea${DIM}sure[4D`);
+      box.autoComplete = () => [ " time" ];
+
+      box.feed(new Key(0, KeyType.Tab));
+      escpaint(canvas).should.eql(`ch${CLEAR}  [4D`);
+      box.feed(Key.normal(0, "l"));
+      escpaint(canvas).should.eql(`l [D`);
+      box.feed(new Key(0, KeyType.Tab));
+      escpaint(canvas).should.eql(` time`);
+    });
   });
 });

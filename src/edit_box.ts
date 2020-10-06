@@ -4,6 +4,7 @@ import { PushAsyncIterator } from "ballvalve";
 export interface EditBoxConfig {
   color: string;
   backgroundColor: string;
+  suggestionColor: string;
   maxLength: number;
   history: string[];
   maxHistory: number;
@@ -12,6 +13,7 @@ export interface EditBoxConfig {
 const DEFAULT_CONFIG: EditBoxConfig = {
   color: "#ccc",
   backgroundColor: "#000",
+  suggestionColor: "#777",
   maxLength: 255,
   history: [],
   maxHistory: 100,
@@ -30,6 +32,11 @@ export class EditBox {
 
   // allow custom key bindings
   customBindings: [ Key, (key: Key, editBox: EditBox) => void ][] = [];
+
+  autoComplete?: (text: string) => (string[] | undefined);
+  // cached while they tab through the options:
+  suggestions?: string[];
+  suggestionIndex?: number;
 
   events = new PushAsyncIterator<string>();
   keyParser = new KeyParser(keys => {
@@ -78,6 +85,9 @@ export class EditBox {
 
   redraw() {
     this.region.color(this.config.color, this.config.backgroundColor).clear().at(0, 0).write(this.line);
+    if (this.suggestions && this.suggestionIndex !== undefined) {
+      this.region.color(this.config.suggestionColor).write(this.suggestions[this.suggestionIndex]);
+    }
     this.moveCursor();
   }
 
@@ -94,10 +104,28 @@ export class EditBox {
     return this.events;
   }
 
+  content(): string {
+    return this.line;
+  }
+
+  contentLeft(): string {
+    return this.line.slice(0, this.pos);
+  }
+
+  contentRight(): string {
+    return this.line.slice(this.pos);
+  }
+
   feed(key: Key) {
     for (const [ k, f ] of this.customBindings) if (key.equals(k)) {
       f(key, this);
       return;
+    }
+
+    if (this.suggestionIndex !== undefined) {
+      if (key.modifiers != 0 || (key.type != KeyType.Tab && key.type != KeyType.Right)) {
+        this.clearSuggestions();
+      }
     }
 
     if (key.modifiers == 0) {
@@ -106,6 +134,8 @@ export class EditBox {
           return this.backspace();
         case KeyType.Delete:
           return this.deleteForward();
+        case KeyType.Tab:
+          return this.tab();
         case KeyType.Return:
           return this.enter();
         case KeyType.Left:
@@ -176,6 +206,32 @@ export class EditBox {
     this.redraw();
   }
 
+  tab() {
+    if (this.suggestions && this.suggestionIndex !== undefined) {
+      // next suggestion
+      this.suggestionIndex = (this.suggestionIndex + 1) % this.suggestions.length;
+      this.redraw();
+      return;
+    }
+
+    if (!this.autoComplete) return;
+    const suggestions = this.autoComplete(this.content());
+    if (suggestions === undefined || suggestions.length == 0) return;
+    if (suggestions.length == 1) {
+      this.insert(suggestions[0]);
+      return;
+    }
+
+    // find commonalities?
+    while (suggestions.every(s => s.length > 0 && s[0] == suggestions[0][0])) {
+      this.insert(suggestions[0][0]);
+      for (let i = 0; i < suggestions.length; i++) suggestions[i] = suggestions[i].slice(1);
+    }
+    this.suggestions = suggestions;
+    this.suggestionIndex = 0;
+    this.redraw();
+  }
+
   enter() {
     this.recordHistory(this.line);
     const line = this.line;
@@ -203,6 +259,12 @@ export class EditBox {
   }
 
   right() {
+    if (this.suggestions && this.suggestionIndex !== undefined) {
+      // accept current suggestion
+      this.insert(this.suggestions[this.suggestionIndex]);
+      this.clearSuggestions();
+      return;
+    }
     if (this.pos >= this.line.length) return;
     this.moveCursor(this.pos + 1);
   }
@@ -275,5 +337,14 @@ export class EditBox {
     if (this.history.length > this.config.maxHistory) {
       this.history = this.history.slice(this.history.length - this.config.maxHistory);
     }
+  }
+
+
+  // ----- auto-complete
+
+  clearSuggestions() {
+    this.suggestions = undefined;
+    this.suggestionIndex = undefined;
+    this.redraw();
   }
 }
