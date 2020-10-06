@@ -40,14 +40,14 @@ describe("LogView", () => {
       "[40m[38;5;248msecond line         [m\n"
     );
 
-    canvas.resize(10, canvas.rows);
+    canvas.resize(11, canvas.rows);
     canvas.rows.should.eql(5);
     escInline(canvas).should.eql(
-      "[40m[38;5;248mturn off  [m\n" +
-      "[40m[38;5;248mthe       [m\n" +
-      "[40m[38;5;248mtelevision[m\n" +
-      "[40m[38;5;248msecond    [m\n" +
-      "[40m[38;5;248mline      [m\n"
+      "[40m[38;5;248mturn off   [m\n" +
+      "[40m[38;5;248mthe        [m\n" +
+      "[40m[38;5;248mtelevision [m\n" +
+      "[40m[38;5;248msecond     [m\n" +
+      "[40m[38;5;248mline       [m\n"
     );
 
     canvas.resize(25, canvas.rows);

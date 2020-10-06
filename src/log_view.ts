@@ -48,7 +48,7 @@ export class LogView {
   reflow() {
     this.cols = this.canvas.cols;
     const oldWrappedLines = this.wrappedLines;
-    this.wrappedLines = this.lines.map(line => wrapText(line, this.cols, this.config.wordWrap));
+    this.wrappedLines = this.lines.map(line => wrapText(line, this.cols - 1, this.config.wordWrap));
     if (this.contentMovedListener && oldWrappedLines) {
       this.contentMovedListener(row => {
         // ignore the offset, because we had to reflow the text.
@@ -65,7 +65,7 @@ export class LogView {
 
   addText(text: RichText) {
     this.lines.push(text);
-    this.wrappedLines.push(wrapText(text, this.canvas.cols, this.config.wordWrap));
+    this.wrappedLines.push(wrapText(text, this.canvas.cols - 1, this.config.wordWrap));
     if (this.lines.length > this.config.maxLines) {
       this.lines.shift();
       const discarded = this.wrappedLines.shift();
