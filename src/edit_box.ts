@@ -120,7 +120,7 @@ export class EditBox {
   }
 
   private _redraw() {
-    this.setIdealHeight(Math.ceil((this.line.length + 1) / this.region.cols));
+    this.setIdealHeight(Math.ceil((this.line.length + 2) / this.region.cols));
 
     const regionSize = this.region.rows * this.region.cols;
     let displayText = this.line.slice(this.visiblePos, this.visiblePos + regionSize);
@@ -139,11 +139,13 @@ export class EditBox {
   moveCursor(pos: number = this.pos): boolean {
     const oldVisiblePos = this.visiblePos;
     const regionSize = this.region.rows * this.region.cols;
+    const needSize = this.line.length + this.suggestionLength();
     // scroll a one-line edit box by a half line at a time:
     const roundFactor = this.region.rows == 1 ? Math.floor(this.region.cols / 2) : this.region.cols;
     // fix in case a resize has made our offset weird:
     this.visiblePos = Math.floor(this.visiblePos / roundFactor) * roundFactor;
 
+    if (regionSize > needSize) this.visiblePos = 0;
     while (pos <= this.visiblePos && this.visiblePos > 0) this.visiblePos -= roundFactor;
     while (pos >= this.visiblePos + regionSize - 1 && this.config.allowScroll) this.visiblePos += roundFactor;
     if (this.visiblePos != oldVisiblePos) this._redraw();
@@ -426,5 +428,10 @@ export class EditBox {
     this.suggestions = undefined;
     this.suggestionIndex = undefined;
     this.redraw();
+  }
+
+  private suggestionLength(): number {
+    if (!this.suggestions || this.suggestionIndex === undefined) return 0;
+    return this.suggestions[this.suggestionIndex].length;
   }
 }
