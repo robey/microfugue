@@ -231,14 +231,16 @@ describe("EditBox", () => {
     const canvas = new Canvas(20, 3);
     const region = canvas.clip(0, 1, 20, 2);
     const box = new EditBox(region, { color: "white", allowScroll: true });
-    for (const ch of "0123456789abcdefghi") box.feed(Key.normal(0, ch));
-    escpaint(canvas).should.eql("[37m[40m[2J[H[B[38;5;15m0123456789abcdefghi");
+    for (const ch of "0123456789abcdefgh") box.feed(Key.normal(0, ch));
+    escpaint(canvas).should.eql("[37m[40m[2J[H[B[38;5;15m0123456789abcdefgh");
 
-    box.feed(Key.normal(0, "j"));
-    escpaint(canvas).should.eql("[19D…bcdefghij[K");
+    box.feed(Key.normal(0, "i"));
+    escpaint(canvas).should.eql("[18D…bcdefghi[K");
+    for (const ch of "jklm") box.feed(Key.normal(0, ch));
+    escpaint(canvas).should.eql("jklm");
 
-    for (const ch of "klmnopqrst") box.feed(Key.normal(0, ch));
-    escpaint(canvas).should.eql("[9Dlmnopqrst");
+    for (const ch of "nopqrst") box.feed(Key.normal(0, ch));
+    escpaint(canvas).should.eql("[12Dlmnopqrst   [3D");
     box.feed(Key.normal(0, "u"));
     escpaint(canvas).should.eql("u");
 
@@ -246,22 +248,32 @@ describe("EditBox", () => {
     escpaint(canvas).should.eql("[11D0123456789abcdefghi…[20D");
     box.feed(Key.normal(Modifier.Control, "E"));
     escpaint(canvas).should.eql("…lmnopqrstu[K");
-    for (let i = 0; i < 12; i++) box.feed(new Key(0, KeyType.Left));
-    escpaint(canvas).should.eql("[10Dbcdefghijklmnopqrs…[11D");
+    for (let i = 0; i < 11; i++) box.feed(new Key(0, KeyType.Left));
+    escpaint(canvas).should.eql("[10Dbcdefghijklmnopqrs…[10D");
+
+    box.feed(Key.normal(Modifier.Control, "E"));
+    box.feed(new Key(Modifier.Control, KeyType.Up));
+    escpaint(canvas).should.eql("[9Dlmnopqrstu[K[10D");
+    box.feed(new Key(Modifier.Control, KeyType.Up));
+    escpaint(canvas).should.eql("bcdefghijklmnopqrs…[19D");
+    box.feed(new Key(Modifier.Control, KeyType.Down));
+    escpaint(canvas).should.eql("[10C");
   });
 
   it("scroll on two lines", async () => {
     const canvas = new Canvas(20, 3);
     const region = canvas.clip(0, 1, 10, 3);
     const box = new EditBox(region, { color: "white", allowScroll: true });
-    for (const ch of "0123456789abcdefghi") box.feed(Key.normal(0, ch));
-    escpaint(canvas).should.eql("[37m[40m[2J[H[B[38;5;15m0123456789[3Habcdefghi");
+    for (const ch of "0123456789abcdefgh") box.feed(Key.normal(0, ch));
+    escpaint(canvas).should.eql("[37m[40m[2J[H[B[38;5;15m0123456789[3Habcdefgh");
 
-    box.feed(Key.normal(0, "j"));
-    escpaint(canvas).should.eql("[2H…bcdefghij[3H[K");
+    box.feed(Key.normal(0, "i"));
+    escpaint(canvas).should.eql("[2H…bcdefghi [3H[K[2;10H");
+    for (const ch of "jklm") box.feed(Key.normal(0, ch));
+    escpaint(canvas).should.eql("j[3Hklm");
 
-    for (const ch of "klmnopqrst") box.feed(Key.normal(0, ch));
-    escpaint(canvas).should.eql("[2;2Hlmnopqrst[3H");
+    for (const ch of "nopqrst") box.feed(Key.normal(0, ch));
+    escpaint(canvas).should.eql("[2;2Hlmnopqrst[3H   [3D");
     box.feed(Key.normal(0, "u"));
     escpaint(canvas).should.eql("u");
 
@@ -269,8 +281,16 @@ describe("EditBox", () => {
     escpaint(canvas).should.eql("[2H0123456789[3Habcdefghi…[2H");
     box.feed(Key.normal(Modifier.Control, "E"));
     escpaint(canvas).should.eql("…lmnopqrst[3Hu[K");
-    for (let i = 0; i < 12; i++) box.feed(new Key(0, KeyType.Left));
-    escpaint(canvas).should.eql("[Abcdefghij[3Hklmnopqrs…[2;10H");
+    for (let i = 0; i < 11; i++) box.feed(new Key(0, KeyType.Left));
+    escpaint(canvas).should.eql("[Abcdefghij[3Hklmnopqrs…[10D");
+
+    box.feed(Key.normal(Modifier.Control, "E"));
+    box.feed(new Key(Modifier.Control, KeyType.Up));
+    escpaint(canvas).should.eql("[2;2Hlmnopqrst[3Hu[K[A");
+    box.feed(new Key(Modifier.Control, KeyType.Up));
+    escpaint(canvas).should.eql("bcdefghij[3Hklmnopqrs…[2;2H");
+    box.feed(new Key(Modifier.Control, KeyType.Down));
+    escpaint(canvas).should.eql("[B");
   });
 
   describe("suggestions", () => {

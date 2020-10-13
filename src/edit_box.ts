@@ -122,8 +122,8 @@ export class EditBox {
     // fix in case a resize has made our offset weird:
     this.visiblePos = Math.floor(this.visiblePos / roundFactor) * roundFactor;
 
-    while (pos < this.visiblePos) this.visiblePos -= roundFactor;
-    while (pos >= this.visiblePos + regionSize) this.visiblePos += roundFactor;
+    while (pos <= this.visiblePos && this.visiblePos > 0) this.visiblePos -= roundFactor;
+    while (pos >= this.visiblePos + regionSize - 1 && this.config.allowScroll) this.visiblePos += roundFactor;
     if (this.visiblePos != oldVisiblePos) this._redraw();
 
     this.pos = pos;
@@ -195,6 +195,10 @@ export class EditBox {
           return this.wordLeft();
         case KeyType.Right:
           return this.wordRight();
+        case KeyType.Up:
+          return this.scrollUp();
+        case KeyType.Down:
+          return this.scrollDown();
         case KeyType.Normal:
           // look for unix editing keys
           switch (key.key) {
@@ -317,6 +321,18 @@ export class EditBox {
     while (pos < this.line.length && !this.line[pos].match(/[\w\d]/)) pos += 1;
     while (pos < this.line.length && this.line[pos].match(/[\w\d]/)) pos += 1;
     this.moveCursor(pos);
+  }
+
+  scrollUp() {
+    const roundFactor = this.region.rows == 1 ? Math.floor(this.region.cols / 2) : this.region.cols;
+    if (this.pos < roundFactor) return;
+    this.moveCursor(this.pos - roundFactor);
+  }
+
+  scrollDown() {
+    const roundFactor = this.region.rows == 1 ? Math.floor(this.region.cols / 2) : this.region.cols;
+    if (this.pos + roundFactor > this.line.length) return;
+    this.moveCursor(this.pos + roundFactor);
   }
 
   home() {
