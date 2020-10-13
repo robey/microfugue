@@ -105,9 +105,12 @@ export class EditBox {
   private _redraw() {
     const regionSize = this.region.rows * this.region.cols;
     let displayText = this.line.slice(this.visiblePos, this.visiblePos + regionSize);
-    if (this.visiblePos > 0) displayText = ELLIPSIS + displayText.slice(1);
-    if (this.visiblePos + regionSize < this.line.length) displayText = displayText.slice(0, -1) + ELLIPSIS;
-    this.region.color(this.config.color, this.config.backgroundColor).clear().at(0, 0).write(displayText);
+    const offset = this.visiblePos > 0 ? 1 : 0;
+    const rOffset = this.visiblePos + regionSize < this.line.length ? -1 : undefined;
+    this.region.color(this.config.color, this.config.backgroundColor).clear().at(0, 0);
+    if (offset != 0) this.region.color(this.config.suggestionColor).write(ELLIPSIS);
+    this.region.color(this.config.color).write(displayText.slice(offset, rOffset));
+    if (rOffset !== undefined) this.region.color(this.config.suggestionColor).write(ELLIPSIS);
     if (this.suggestions && this.suggestionIndex !== undefined) {
       this.region.color(this.config.suggestionColor).write(this.suggestions[this.suggestionIndex]);
     }

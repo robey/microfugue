@@ -235,7 +235,7 @@ describe("EditBox", () => {
     escpaint(canvas).should.eql("[37m[40m[2J[H[B[38;5;15m0123456789abcdefgh");
 
     box.feed(Key.normal(0, "i"));
-    escpaint(canvas).should.eql("[18D…bcdefghi[K");
+    escpaint(canvas).should.eql("[18D[38;5;243m…[38;5;15mbcdefghi[K");
     for (const ch of "jklm") box.feed(Key.normal(0, ch));
     escpaint(canvas).should.eql("jklm");
 
@@ -245,17 +245,17 @@ describe("EditBox", () => {
     escpaint(canvas).should.eql("u");
 
     box.feed(Key.normal(Modifier.Control, "A"));
-    escpaint(canvas).should.eql("[11D0123456789abcdefghi…[20D");
+    escpaint(canvas).should.eql("[11D0123456789abcdefghi[38;5;243m…[20D");
     box.feed(Key.normal(Modifier.Control, "E"));
-    escpaint(canvas).should.eql("…lmnopqrstu[K");
+    escpaint(canvas).should.eql("…[38;5;15mlmnopqrstu[K");
     for (let i = 0; i < 11; i++) box.feed(new Key(0, KeyType.Left));
-    escpaint(canvas).should.eql("[10Dbcdefghijklmnopqrs…[10D");
+    escpaint(canvas).should.eql("[10Dbcdefghijklmnopqrs[38;5;243m…[10D");
 
     box.feed(Key.normal(Modifier.Control, "E"));
     box.feed(new Key(Modifier.Control, KeyType.Up));
-    escpaint(canvas).should.eql("[9Dlmnopqrstu[K[10D");
+    escpaint(canvas).should.eql("[9D[38;5;15mlmnopqrstu[K[10D");
     box.feed(new Key(Modifier.Control, KeyType.Up));
-    escpaint(canvas).should.eql("bcdefghijklmnopqrs…[19D");
+    escpaint(canvas).should.eql("bcdefghijklmnopqrs[38;5;243m…[19D");
     box.feed(new Key(Modifier.Control, KeyType.Down));
     escpaint(canvas).should.eql("[10C");
   });
@@ -268,7 +268,7 @@ describe("EditBox", () => {
     escpaint(canvas).should.eql("[37m[40m[2J[H[B[38;5;15m0123456789[3Habcdefgh");
 
     box.feed(Key.normal(0, "i"));
-    escpaint(canvas).should.eql("[2H…bcdefghi [3H[K[2;10H");
+    escpaint(canvas).should.eql("[2H[38;5;243m…[38;5;15mbcdefghi [3H[K[2;10H");
     for (const ch of "jklm") box.feed(Key.normal(0, ch));
     escpaint(canvas).should.eql("j[3Hklm");
 
@@ -278,17 +278,17 @@ describe("EditBox", () => {
     escpaint(canvas).should.eql("u");
 
     box.feed(Key.normal(Modifier.Control, "A"));
-    escpaint(canvas).should.eql("[2H0123456789[3Habcdefghi…[2H");
+    escpaint(canvas).should.eql("[2H0123456789[3Habcdefghi[38;5;243m…[2H");
     box.feed(Key.normal(Modifier.Control, "E"));
-    escpaint(canvas).should.eql("…lmnopqrst[3Hu[K");
+    escpaint(canvas).should.eql("…[38;5;15mlmnopqrst[3Hu[K");
     for (let i = 0; i < 11; i++) box.feed(new Key(0, KeyType.Left));
-    escpaint(canvas).should.eql("[Abcdefghij[3Hklmnopqrs…[10D");
+    escpaint(canvas).should.eql("[Abcdefghij[3Hklmnopqrs[38;5;243m…[10D");
 
     box.feed(Key.normal(Modifier.Control, "E"));
     box.feed(new Key(Modifier.Control, KeyType.Up));
-    escpaint(canvas).should.eql("[2;2Hlmnopqrst[3Hu[K[A");
+    escpaint(canvas).should.eql("[2;2H[38;5;15mlmnopqrst[3Hu[K[A");
     box.feed(new Key(Modifier.Control, KeyType.Up));
-    escpaint(canvas).should.eql("bcdefghij[3Hklmnopqrs…[2;2H");
+    escpaint(canvas).should.eql("bcdefghij[3Hklmnopqrs[38;5;243m…[2;2H");
     box.feed(new Key(Modifier.Control, KeyType.Down));
     escpaint(canvas).should.eql("[B");
   });
