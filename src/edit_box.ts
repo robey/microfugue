@@ -4,15 +4,27 @@ import { PushAsyncIterator } from "ballvalve";
 const ELLIPSIS = "\u2026";
 
 export interface EditBoxConfig {
+  // colors for the actual text being edited
   color: string;
   backgroundColor: string;
+
+  // a softer color for auto-complete suggestions, and the ellipses when the full text won't fit
   suggestionColor: string;
+
+  // maximum text size -- if allowScroll is false, this may be truncated to the region size
   maxLength: number;
-  history: string[];
+
+  // when keeping command history, how many should we keep? you can also pre-seed a saved history.
   maxHistory: number;
+  history: string[];
 
   // scroll vertically to allow text that's bigger than the region?
   allowScroll: boolean;
+
+  // if you'd like to resize the region based on content, this callback will
+  // be invoked every time the "ideal" height of the region changes. (you are
+  // free to ignore or clamp the request.)
+  heightChangeRequest?: (lines: number) => void;
 }
 
 const DEFAULT_CONFIG: EditBoxConfig = {
@@ -20,8 +32,8 @@ const DEFAULT_CONFIG: EditBoxConfig = {
   backgroundColor: "#000",
   suggestionColor: "#777",
   maxLength: 255,
-  history: [],
   maxHistory: 100,
+  history: [],
   allowScroll: false,
 };
 
@@ -33,6 +45,8 @@ export class EditBox {
 
   // when scrolling around a region, where does the visible text start?
   visiblePos: number = 0;
+  // what's the ideal height?
+  idealHeight: number = 1;
 
   // when traversing history:
   history: string[] = [];
@@ -86,6 +100,7 @@ export class EditBox {
     this.historyIndex = this.history.length;
     this.saved = "";
     this.moveCursor();
+    this.setIdealHeight(1);
   }
 
   resize() {
@@ -94,6 +109,8 @@ export class EditBox {
       if (this.line.length > this.maxLength) this.line = this.line.slice(0, this.maxLength);
       if (this.pos > this.maxLength) this.pos = this.maxLength;
     }
+    // in case we were resized to make room:
+    this.visiblePos = 0;
     this.redraw();
   }
 
@@ -103,6 +120,8 @@ export class EditBox {
   }
 
   private _redraw() {
+    this.setIdealHeight(Math.ceil((this.line.length + 1) / this.region.cols));
+
     const regionSize = this.region.rows * this.region.cols;
     let displayText = this.line.slice(this.visiblePos, this.visiblePos + regionSize);
     const offset = this.visiblePos > 0 ? 1 : 0;
@@ -141,6 +160,12 @@ export class EditBox {
       for await (const data of s) this.keyParser.feed(data.toString("utf-8"));
     });
     return this.events;
+  }
+
+  private setIdealHeight(lines: number) {
+    if (this.idealHeight == lines) return;
+    this.idealHeight = lines;
+    if (this.config.heightChangeRequest) setTimeout(() => this.config.heightChangeRequest?.(lines), 0);
   }
 
   content(): string {

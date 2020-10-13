@@ -196,7 +196,7 @@ describe("EditBox", () => {
     });
   });
 
-  it("bind", async () => {
+  it("bind", () => {
     let count1 = 0, count2 = 0, count3 = 0;
     box.bind(new Key(0, KeyType.PageUp), () => { count1++; });
     box.bind(new Key(0, KeyType.PageDown), () => { count2++; });
@@ -215,7 +215,7 @@ describe("EditBox", () => {
     count3.should.eql(1);
   });
 
-  it("resize", async () => {
+  it("resize", () => {
     const canvas = new Canvas(20, 3);
     const region = canvas.clip(0, 1, 20, 3);
     const box = new EditBox(region, { color: "white", maxHistory: 5 });
@@ -227,7 +227,7 @@ describe("EditBox", () => {
     escpaint(canvas).should.eql("[37m[40m[2J[H[B[38;5;15mhello");
   });
 
-  it("scroll on one line", async () => {
+  it("scroll on one line", () => {
     const canvas = new Canvas(20, 3);
     const region = canvas.clip(0, 1, 20, 2);
     const box = new EditBox(region, { color: "white", allowScroll: true });
@@ -260,7 +260,7 @@ describe("EditBox", () => {
     escpaint(canvas).should.eql("[10C");
   });
 
-  it("scroll on two lines", async () => {
+  it("scroll on two lines", () => {
     const canvas = new Canvas(20, 3);
     const region = canvas.clip(0, 1, 10, 3);
     const box = new EditBox(region, { color: "white", allowScroll: true });
@@ -291,6 +291,37 @@ describe("EditBox", () => {
     escpaint(canvas).should.eql("bcdefghij[3Hklmnopqrs[38;5;243m…[2;2H");
     box.feed(new Key(Modifier.Control, KeyType.Down));
     escpaint(canvas).should.eql("[B");
+  });
+
+  it("setIdealHeight", async () => {
+    const delay = (msec: number) => new Promise(resolve => setTimeout(resolve, msec));
+
+    const canvas = new Canvas(20, 3);
+    const region = canvas.clip(0, 0, 10, 1);
+    const requests: number[] = [];
+    const heightChangeRequest = (lines: number) => {
+      requests.push(lines);
+      region.resize(0, 0, 10, Math.min(lines, 3));
+    };
+    const box = new EditBox(region, { color: "white", allowScroll: true, heightChangeRequest });
+
+    for (const ch of "0123456789abcdefgh") box.feed(Key.normal(0, ch));
+    await delay(1);
+    requests.should.eql([ 2 ]);
+    box.region.rows.should.eql(2);
+    escpaint(canvas).should.eql("[37m[40m[2J[H[38;5;15m0123456789[2Habcdefgh");
+
+    for (const ch of "ijklm") box.feed(Key.normal(0, ch));
+    await delay(1);
+    requests.should.eql([ 2, 3 ]);
+    box.region.rows.should.eql(3);
+    escpaint(canvas).should.eql("ij[3Hklm");
+
+    box.feed(RETURN);
+    await delay(1);
+    requests.should.eql([ 2, 3, 1 ]);
+    box.region.rows.should.eql(1);
+    escpaint(canvas).should.eql(`[H[K[B[K[B   [H`);
   });
 
   describe("suggestions", () => {
