@@ -227,6 +227,52 @@ describe("EditBox", () => {
     escpaint(canvas).should.eql("[37m[40m[2J[H[B[38;5;15mhello");
   });
 
+  it("scroll on one line", async () => {
+    const canvas = new Canvas(20, 3);
+    const region = canvas.clip(0, 1, 20, 2);
+    const box = new EditBox(region, { color: "white", allowScroll: true });
+    for (const ch of "0123456789abcdefghi") box.feed(Key.normal(0, ch));
+    escpaint(canvas).should.eql("[37m[40m[2J[H[B[38;5;15m0123456789abcdefghi");
+
+    box.feed(Key.normal(0, "j"));
+    escpaint(canvas).should.eql("[19D…bcdefghij[K");
+
+    for (const ch of "klmnopqrst") box.feed(Key.normal(0, ch));
+    escpaint(canvas).should.eql("[9Dlmnopqrst");
+    box.feed(Key.normal(0, "u"));
+    escpaint(canvas).should.eql("u");
+
+    box.feed(Key.normal(Modifier.Control, "A"));
+    escpaint(canvas).should.eql("[11D0123456789abcdefghi…[20D");
+    box.feed(Key.normal(Modifier.Control, "E"));
+    escpaint(canvas).should.eql("…lmnopqrstu[K");
+    for (let i = 0; i < 12; i++) box.feed(new Key(0, KeyType.Left));
+    escpaint(canvas).should.eql("[10Dbcdefghijklmnopqrs…[11D");
+  });
+
+  it("scroll on two lines", async () => {
+    const canvas = new Canvas(20, 3);
+    const region = canvas.clip(0, 1, 10, 3);
+    const box = new EditBox(region, { color: "white", allowScroll: true });
+    for (const ch of "0123456789abcdefghi") box.feed(Key.normal(0, ch));
+    escpaint(canvas).should.eql("[37m[40m[2J[H[B[38;5;15m0123456789[3Habcdefghi");
+
+    box.feed(Key.normal(0, "j"));
+    escpaint(canvas).should.eql("[2H…bcdefghij[3H[K");
+
+    for (const ch of "klmnopqrst") box.feed(Key.normal(0, ch));
+    escpaint(canvas).should.eql("[2;2Hlmnopqrst[3H");
+    box.feed(Key.normal(0, "u"));
+    escpaint(canvas).should.eql("u");
+
+    box.feed(Key.normal(Modifier.Control, "A"));
+    escpaint(canvas).should.eql("[2H0123456789[3Habcdefghi…[2H");
+    box.feed(Key.normal(Modifier.Control, "E"));
+    escpaint(canvas).should.eql("…lmnopqrst[3Hu[K");
+    for (let i = 0; i < 12; i++) box.feed(new Key(0, KeyType.Left));
+    escpaint(canvas).should.eql("[Abcdefghij[3Hklmnopqrs…[2;10H");
+  });
+
   describe("suggestions", () => {
     it("rotate", async () => {
       box.autoComplete = () => [ "a", "b", "c" ];

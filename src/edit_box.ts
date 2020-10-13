@@ -1,6 +1,8 @@
 import { Key, KeyParser, Region, KeyType, Modifier } from "antsy";
 import { PushAsyncIterator } from "ballvalve";
 
+const ELLIPSIS = "\u2026";
+
 export interface EditBoxConfig {
   color: string;
   backgroundColor: string;
@@ -8,6 +10,9 @@ export interface EditBoxConfig {
   maxLength: number;
   history: string[];
   maxHistory: number;
+
+  // scroll vertically to allow text that's bigger than the region?
+  allowScroll: boolean;
 }
 
 const DEFAULT_CONFIG: EditBoxConfig = {
@@ -17,6 +22,7 @@ const DEFAULT_CONFIG: EditBoxConfig = {
   maxLength: 255,
   history: [],
   maxHistory: 100,
+  allowScroll: false,
 };
 
 export class EditBox {
@@ -24,6 +30,9 @@ export class EditBox {
   maxLength: number = 0;
   line: string = "";
   pos: number = 0;
+
+  // when scrolling around a region, where does the visible text start?
+  visiblePos: number = 0;
 
   // when traversing history:
   history: string[] = [];
@@ -33,6 +42,7 @@ export class EditBox {
   // allow custom key bindings
   customBindings: [ Key, (key: Key, editBox: EditBox) => void ][] = [];
 
+  // optionally provide a list of completions if the user hits TAB
   autoComplete?: (text: string) => (string[] | undefined);
   // cached while they tab through the options:
   suggestions?: string[];
@@ -48,6 +58,7 @@ export class EditBox {
     this.region.onResize(() => this.resize());
     this.config = Object.assign({}, DEFAULT_CONFIG, options);
     this.history = this.config.history.slice();
+    this.maxLength = this.config.maxLength;
     this.reset();
     this.resize();
     this.redraw();
@@ -71,29 +82,54 @@ export class EditBox {
   reset() {
     this.line = "";
     this.pos = 0;
+    this.visiblePos = 0;
     this.historyIndex = this.history.length;
     this.saved = "";
     this.moveCursor();
   }
 
   resize() {
-    this.maxLength = Math.min(this.config.maxLength, this.region.cols * this.region.rows - 1);
-    if (this.line.length > this.maxLength) this.line = this.line.slice(0, this.maxLength);
-    if (this.pos > this.maxLength) this.pos = this.maxLength;
+    if (!this.config.allowScroll) {
+      this.maxLength = Math.min(this.config.maxLength, this.region.cols * this.region.rows - 1);
+      if (this.line.length > this.maxLength) this.line = this.line.slice(0, this.maxLength);
+      if (this.pos > this.maxLength) this.pos = this.maxLength;
+    }
     this.redraw();
   }
 
   redraw() {
-    this.region.color(this.config.color, this.config.backgroundColor).clear().at(0, 0).write(this.line);
+    if (this.moveCursor()) return;
+    this._redraw();
+  }
+
+  private _redraw() {
+    const regionSize = this.region.rows * this.region.cols;
+    let displayText = this.line.slice(this.visiblePos, this.visiblePos + regionSize);
+    if (this.visiblePos > 0) displayText = ELLIPSIS + displayText.slice(1);
+    if (this.visiblePos + regionSize < this.line.length) displayText = displayText.slice(0, -1) + ELLIPSIS;
+    this.region.color(this.config.color, this.config.backgroundColor).clear().at(0, 0).write(displayText);
     if (this.suggestions && this.suggestionIndex !== undefined) {
       this.region.color(this.config.suggestionColor).write(this.suggestions[this.suggestionIndex]);
     }
-    this.moveCursor();
   }
 
-  moveCursor(pos: number = this.pos) {
+  // returns true if it had to trigger a redraw.
+  moveCursor(pos: number = this.pos): boolean {
+    const oldVisiblePos = this.visiblePos;
+    const regionSize = this.region.rows * this.region.cols;
+    // scroll a one-line edit box by a half line at a time:
+    const roundFactor = this.region.rows == 1 ? Math.floor(this.region.cols / 2) : this.region.cols;
+    // fix in case a resize has made our offset weird:
+    this.visiblePos = Math.floor(this.visiblePos / roundFactor) * roundFactor;
+
+    while (pos < this.visiblePos) this.visiblePos -= roundFactor;
+    while (pos >= this.visiblePos + regionSize) this.visiblePos += roundFactor;
+    if (this.visiblePos != oldVisiblePos) this._redraw();
+
     this.pos = pos;
-    this.region.moveCursor(pos % this.region.cols, Math.floor(pos / this.region.cols));
+    const rPos = pos - this.visiblePos;
+    this.region.moveCursor(rPos % this.region.cols, Math.floor(rPos / this.region.cols));
+    return this.visiblePos != oldVisiblePos;
   }
 
   attachStream(s: AsyncIterable<Buffer | string>): AsyncIterable<string> {
