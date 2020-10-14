@@ -29,7 +29,7 @@ export class RichText {
         i++;
       }
       if (start == i) return undefined;
-      return s.slice(start, i).replace(/\\\{/g, "{");
+      return s.slice(start, i).replace(/\\./g, m => m[1]);
     };
 
     // return the color name in a `{color:` segment, or undefined if it's
@@ -91,10 +91,15 @@ export class RichText {
     return new RichText(defaultColor, spans);
   }
 
+  // make sure no stray "\" or "{" or "}" in the string cause formatting to happen
+  static quote(s: string): string {
+    return s.replace(/\\/g, "\\\\").replace(/\{/g, "\\{").replace(/\}/g, "\\}");
+  }
+
   toString(): string {
     const quote = (s: Span) => {
       if (s instanceof RichText) return s.toString();
-      return s.replace(/(?<!\\)\{/g, "\\{").replace(/(?<!\\)\}/g, "\\}");
+      return RichText.quote(s);
     };
     return `{${this.color}:${this.spans.map(quote).join("")}}`;
   }
