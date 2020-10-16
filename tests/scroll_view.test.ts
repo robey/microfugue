@@ -137,6 +137,24 @@ describe("ScrollView", () => {
     sv.frameBottom.should.eql(14);
   });
 
+  it("can unpin and then jump back", () => {
+    const canvas = new Canvas(20, 10);
+    const sv = new ScrollView(canvas.all(), STANDARD_OPTIONS);
+
+    sv.content.resize(sv.content.cols, 14);
+    sv.frameTop.should.eql(4);
+    sv.frameBottom.should.eql(14);
+
+    sv.unpin();
+    sv.content.resize(sv.content.cols, 15);
+    sv.frameTop.should.eql(4);
+    sv.frameBottom.should.eql(14);
+
+    sv.jumpToBottom();
+    sv.frameTop.should.eql(5);
+    sv.frameBottom.should.eql(15);
+  });
+
   it("adjustView", () => {
     const canvas = new Canvas(20, 10);
     const sv = new ScrollView(canvas.all(), STANDARD_OPTIONS);
@@ -147,5 +165,30 @@ describe("ScrollView", () => {
 
     sv.adjustView(row => row - 3);
     sv.frameTop.should.eql(2);
+  });
+
+  it("anchor and unpin", () => {
+    const canvas = new Canvas(20, 10);
+    const sv = new ScrollView(canvas.all(), STANDARD_OPTIONS);
+
+    sv.content.resize(sv.content.cols, 14);
+    sv.frameTop.should.eql(4);
+    sv.frameBottom.should.eql(14);
+    sv.isPinned().should.eql(true);
+    sv.setAnchor(13);
+
+    sv.content.resize(sv.content.cols, 17);
+    sv.frameTop.should.eql(7);
+    sv.frameBottom.should.eql(17);
+
+    sv.content.resize(sv.content.cols, 23);
+    sv.frameTop.should.eql(13);
+    sv.frameBottom.should.eql(23);
+    sv.isPinned().should.eql(true);
+
+    sv.content.resize(sv.content.cols, 24);
+    sv.frameTop.should.eql(13);
+    sv.frameBottom.should.eql(23);
+    sv.isPinned().should.eql(false);
   });
 });

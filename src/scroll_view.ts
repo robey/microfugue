@@ -34,6 +34,7 @@ export class ScrollView {
   bar: Region;
   frameTop = 0;
   pinnedToBottom = true;
+  anchor?: number;
 
   constructor(region: Region, options: Partial<ScrollViewConfig>) {
     this.config = Object.assign({}, DEFAULT_CONFIG, options);
@@ -68,7 +69,15 @@ export class ScrollView {
 
   redraw() {
     this.frame.clear();
-    if (this.pinnedToBottom) this.frameTop = Math.max(0, this.content.rows - this.frame.rows);
+    if (this.pinnedToBottom) {
+      this.frameTop = Math.max(0, this.content.rows - this.frame.rows);
+      if (this.anchor !== undefined && this.frameTop > this.anchor) {
+        // stop pinning, and hold the anchor on screen.
+        this.pinnedToBottom = false;
+        this.frameTop = this.anchor;
+        this.anchor = undefined;
+      }
+    }
     this.drawScrollBar();
     const y = Math.max(this.frame.rows - this.content.rows, 0);
     this.frame.at(0, y).draw(this.content.clip(0, this.frameTop, this.frame.cols, this.frameBottom));
@@ -118,6 +127,25 @@ export class ScrollView {
     this.frameTop = Math.max(0, Math.min(this.frameTop + this.frame.rows - 1, this.content.rows - this.frame.rows));
     this.pinnedToBottom = (this.frameBottom == this.content.rows);
     this.redraw();
+  }
+
+  jumpToBottom() {
+    this.pinnedToBottom = true;
+    this.redraw();
+  }
+
+  // hold scroll view where it is, even as new lines are added.
+  // can be used to implement paging.
+  unpin() {
+    this.pinnedToBottom = false;
+  }
+
+  isPinned(): boolean {
+    return this.pinnedToBottom;
+  }
+
+  setAnchor(line?: number) {
+    this.anchor = line;
   }
 
   // the owner of the content canvas can hint to us when the content is
