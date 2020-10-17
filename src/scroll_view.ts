@@ -145,7 +145,11 @@ export class ScrollView {
   }
 
   setAnchor(line?: number) {
-    this.anchor = line;
+    if (line !== undefined && line < 0) {
+      this.anchor = Math.max(0, Math.min(this.frameBottom, this.frameTop + this.content.rows) + line);
+    } else {
+      this.anchor = line;
+    }
   }
 
   // the owner of the content canvas can hint to us when the content is

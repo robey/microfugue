@@ -191,4 +191,20 @@ describe("ScrollView", () => {
     sv.frameBottom.should.eql(23);
     sv.isPinned().should.eql(false);
   });
+
+  it("anchor with small content", () => {
+    const canvas = new Canvas(20, 10);
+    const sv = new ScrollView(canvas.all(), STANDARD_OPTIONS);
+
+    sv.content.resize(sv.content.cols, 5);
+    sv.frameTop.should.eql(0);
+    sv.frameBottom.should.eql(10);
+    sv.isPinned().should.eql(true);
+    sv.setAnchor(-1);
+
+    sv.content.resize(sv.content.cols, 15);
+    sv.frameTop.should.eql(4);
+    sv.frameBottom.should.eql(14);
+    sv.isPinned().should.eql(false);
+  });
 });
