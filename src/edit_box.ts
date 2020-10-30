@@ -303,7 +303,7 @@ export class EditBox {
   }
 
   enter() {
-    this.recordHistory(this.line);
+    if (this.line.length > 0) this.recordHistory(this.line);
     const line = this.line;
     this.reset();
     this.redraw();
