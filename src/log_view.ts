@@ -48,7 +48,7 @@ export class LogView {
   reflow() {
     this.cols = this.canvas.cols;
     const oldWrappedLines = this.wrappedLines;
-    this.wrappedLines = this.lines.map(line => wrapText(line, this.cols - 1, this.config.wordWrap));
+    this.wrappedLines = this.lines.map(line => line.wrap(this.cols - 1, this.config.wordWrap));
     if (this.contentMovedListener && oldWrappedLines) {
       this.contentMovedListener(row => {
         // ignore the offset, because we had to reflow the text.
@@ -65,7 +65,7 @@ export class LogView {
 
   addText(text: RichText) {
     this.lines.push(text);
-    this.wrappedLines.push(wrapText(text, this.canvas.cols - 1, this.config.wordWrap));
+    this.wrappedLines.push(text.wrap(this.canvas.cols - 1, this.config.wordWrap));
     if (this.lines.length > this.config.maxLines) {
       this.lines.shift();
       const discarded = this.wrappedLines.shift();
@@ -82,37 +82,11 @@ export class LogView {
     const region = this.canvas.all();
     allLines.forEach((line, i) => {
       region.at(0, i).clearToEndOfLine();
-      render(region, line, this.config.colorAliases);
+      line.render(region, this.config.colorAliases);
     });
   }
 }
 
-
-function render(region: Region, text: RichText, colorAliases?: Map<string, string>) {
-  for (const span of text.spans) {
-    const color = colorAliases?.get(text.color) ?? text.color;
-    region.color(color);
-    if (typeof span === "string") {
-      region.write(span);
-    } else {
-      render(region, span, colorAliases);
-    }
-  }
-}
-
-export function wrapText(text: RichText, width: number, wordWrap: boolean = true): RichText[] {
-  const rv: RichText[] = [];
-  let didAnything = false;
-  while (text.length > width) {
-    const i = wordWrap ? (text.findWordWrap(width) ?? width) : width;
-    const [ left, right ] = text.split(i);
-    rv.push(left);
-    text = right;
-    didAnything = true;
-  }
-  if (text.length > 0 || !didAnything) rv.push(text);
-  return rv;
-}
 
 // returns line # and # of rows within the line
 function rowToLine(wrappedLines: RichText[][], row: number): [ number, number ] {

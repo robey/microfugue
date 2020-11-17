@@ -1,3 +1,5 @@
+import { Region } from "antsy";
+
 type Span = RichText | string;
 
 export class RichText {
@@ -162,6 +164,33 @@ export class RichText {
       // continue from the final char in the previous span
       index--;
       offset = this.spans[index].length - 1;
+    }
+  }
+
+  wrap(width: number, wordWrap: boolean = true): RichText[] {
+    const rv: RichText[] = [];
+    let didAnything = false;
+    let text: RichText = this;
+    while (text.length > width) {
+      const i = wordWrap ? (text.findWordWrap(width) ?? width) : width;
+      const [ left, right ] = text.split(i);
+      rv.push(left);
+      text = right;
+      didAnything = true;
+    }
+    if (text.length > 0 || !didAnything) rv.push(text);
+    return rv;
+  }
+
+  render(region: Region, colorAliases?: Map<string, string>) {
+    for (const span of this.spans) {
+      const color = colorAliases?.get(this.color) ?? this.color;
+      region.color(color);
+      if (typeof span === "string") {
+        region.write(span);
+      } else {
+        span.render(region, colorAliases);
+      }
     }
   }
 }

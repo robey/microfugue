@@ -1,5 +1,5 @@
 import { Canvas } from "antsy";
-import { LogView, RichText, wrapText } from "../src";
+import { LogView, RichText } from "../src";
 
 import "should";
 import "source-map-support/register";
@@ -9,15 +9,15 @@ const escInline = (c: Canvas): string => c.paintInline().replace(/\u001b\[/g, "[
 describe("LogView", () => {
   it("wrapText", () => {
     const text1 = RichText.string("777", "turn off the television");
-    wrapText(text1, 50).map(x => x.toString()).should.eql([ "{777:turn off the television}" ]);
-    wrapText(text1, 20).map(x => x.toString()).should.eql([ "{777:turn off the }", "{777:television}" ]);
-    wrapText(text1, 5).map(x => x.toString()).should.eql([
+    text1.wrap(50).map(x => x.toString()).should.eql([ "{777:turn off the television}" ]);
+    text1.wrap(20).map(x => x.toString()).should.eql([ "{777:turn off the }", "{777:television}" ]);
+    text1.wrap(5).map(x => x.toString()).should.eql([
       "{777:turn }", "{777:off }", "{777:the }", "{777:telev}", "{777:ision}"
     ]);
 
     const text2 = RichText.string("777", "monosyllabicism");
-    wrapText(text2, 10).map(x => x.toString()).should.eql([ "{777:monosyllab}", "{777:icism}" ]);
-    wrapText(text2, 8).map(x => x.toString()).should.eql([ "{777:monosyll}", "{777:abicism}" ]);
+    text2.wrap(10).map(x => x.toString()).should.eql([ "{777:monosyllab}", "{777:icism}" ]);
+    text2.wrap(8).map(x => x.toString()).should.eql([ "{777:monosyll}", "{777:abicism}" ]);
   });
 
   it("add things at the bottom", () => {
