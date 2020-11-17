@@ -25,6 +25,12 @@ export interface EditBoxConfig {
   // be invoked every time the "ideal" height of the region changes. (you are
   // free to ignore or clamp the request.)
   heightChangeRequest?: (lines: number) => void;
+
+  // keep history and navigate it with arrow keys?
+  useHistory: boolean;
+
+  // generate a text event on "enter"? if not, this is a "passive" edit box.
+  commitOnEnter: boolean;
 }
 
 const DEFAULT_CONFIG: EditBoxConfig = {
@@ -35,6 +41,8 @@ const DEFAULT_CONFIG: EditBoxConfig = {
   maxHistory: 100,
   history: [],
   allowScroll: false,
+  useHistory: true,
+  commitOnEnter: true,
 };
 
 export class EditBox {
@@ -209,9 +217,17 @@ export class EditBox {
         case KeyType.Right:
           return this.right();
         case KeyType.Up:
-          return this.historyPrevious();
+          if (this.config.useHistory) {
+            return this.historyPrevious();
+          } else {
+            return this.scrollUp();
+          }
         case KeyType.Down:
-          return this.historyNext();
+          if (this.config.useHistory) {
+            return this.historyNext();
+          } else {
+            return this.scrollDown();
+          }
         case KeyType.Home:
           return this.home();
         case KeyType.End:
@@ -250,9 +266,17 @@ export class EditBox {
             case "K":
               return this.deleteToEol();
             case "N":
-              return this.historyNext();
+              if (this.config.useHistory) {
+                return this.historyNext();
+              } else {
+                return this.scrollDown();
+              }
             case "P":
-              return this.historyPrevious();
+              if (this.config.useHistory) {
+                return this.historyPrevious();
+              } else {
+                return this.scrollUp();
+              }
             case "T":
               return this.transpose();
             case "W":
@@ -303,7 +327,8 @@ export class EditBox {
   }
 
   enter() {
-    if (this.line.length > 0) this.recordHistory(this.line);
+    if (!this.config.commitOnEnter) return;
+    if (this.line.length > 0 && this.config.useHistory) this.recordHistory(this.line);
     const line = this.line;
     this.reset();
     this.redraw();

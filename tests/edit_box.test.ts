@@ -1,9 +1,7 @@
+import "should";
 import { Canvas, Key, Modifier, KeyType } from "antsy";
 import { asyncIter } from "ballvalve";
 import { EditBox } from "..";
-
-import "should";
-import "source-map-support/register";
 
 const CLEAR = `[38;5;15m`;
 const DIM = `[38;5;243m`;
@@ -291,6 +289,25 @@ describe("EditBox", () => {
     escpaint(canvas).should.eql("bcdefghij[3Hklmnopqrs[38;5;243m…[2;2H");
     box.feed(new Key(Modifier.Control, KeyType.Down));
     escpaint(canvas).should.eql("[B");
+  });
+
+  it("no history", async () => {
+    const canvas = new Canvas(20, 3);
+    const region = canvas.clip(0, 1, 10, 3);
+    const box = new EditBox(region, { color: "white", allowScroll: true, useHistory: false, commitOnEnter: false });
+    box.history.should.eql([]);
+    for (const ch of "0123456789abcdefgh") box.feed(Key.normal(0, ch));
+    escpaint(canvas).should.eql("[37m[40m[2J[H[B[38;5;15m0123456789[3Habcdefgh");
+
+    // up/down navigate instead of manipulate history
+    box.feed(new Key(Modifier.Control, KeyType.Up));
+    escpaint(canvas).should.eql("[A");
+
+    // don't commit text, don't add to history
+    box.feed(new Key(0, KeyType.Backspace));
+    box.feed(new Key(0, KeyType.Return));
+    escpaint(canvas).should.eql("[D89a[3Hbcdefgh [2;8H");
+    (await Promise.race([ box.events.next(), new Promise<number>(resolve => setTimeout(() => resolve(5), 10)) ])).should.eql(5);
   });
 
   it("setIdealHeight", async () => {
