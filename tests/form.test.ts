@@ -1,18 +1,19 @@
 import "should";
 import { Canvas, GridLayout, Key, KeyType, Modifier } from "antsy";
-import { Form, FormButtons, FormText, RichText } from "..";
+import { Form, FormButtons, FormEditBox, FormText, RichText } from "..";
 
 const RESET = `[37m[40m`;
 const CLEAR = RESET + `[2J[H`;
 const BLUE = `[38;5;12m`;
 const RED = `[38;5;9m`;
 const WHITE = `[38;5;15m`;
+const GRAY = `[38;5;246m`;
 const BLUE_BG = `[44m`;
-const GRAY_BG = `[48;5;240m`;
+const GRAY_BG = `[48;5;236m`;
 const DIM = `[38;5;243m`;
 const LABEL = `[38;5;252m`;
-const FOCUS_BUTTON = WHITE + BLUE_BG;
-const BUTTON = WHITE + GRAY_BG;
+const FOCUS = WHITE + BLUE_BG;
+const NORMAL = GRAY + GRAY_BG;
 
 const escpaint = (c: Canvas): string => c.paint().replace(/\u001b\[/g, "[");
 
@@ -124,7 +125,7 @@ describe("Form", () => {
     );
 
     escpaint(canvas).should.eql(
-      `${CLEAR}[2;5H${LABEL}Done? ${FOCUS_BUTTON} ■ OK ${RESET}  ${BUTTON} □ Cancel [17D`
+      `${CLEAR}[2;5H${LABEL}Done? ${FOCUS} ■ OK ${RESET}  ${NORMAL} □ Cancel [17D`
     );
   });
 
@@ -141,11 +142,11 @@ describe("Form", () => {
     );
 
     escpaint(canvas).should.eql(
-      `${CLEAR}[2;5H${LABEL}Done? ${FOCUS_BUTTON} ■ OK ${RESET}  ${BUTTON} □ Cancel [17D`
+      `${CLEAR}[2;5H${LABEL}Done? ${FOCUS} ■ OK ${RESET}  ${NORMAL} □ Cancel [17D`
     );
     form.next();
     escpaint(canvas).should.eql(
-      `[D □ OK ${RESET}  ${FOCUS_BUTTON} ■ Cancel [9D`
+      `[D □ OK ${RESET}  ${FOCUS} ■ Cancel [9D`
     );
   });
 
@@ -165,23 +166,23 @@ describe("Form", () => {
 
     escpaint(canvas).should.eql(
       `${CLEAR}[2;4H${LABEL}Error! ` +
-      `${FOCUS_BUTTON} ■ Abort ${RESET}  ${BUTTON} □ Retry ${RESET}  ${BUTTON} □ Fail ` +
+      `${FOCUS} ■ Abort ${RESET}  ${NORMAL} □ Retry ${RESET}  ${NORMAL} □ Fail ` +
       `[4;11H □ Save [2;12H`
     );
     form.next();
     form.next();
     escpaint(canvas).should.eql(
-      `[D □ Abort [13C${BLUE_BG} ■ Fail [7D`
+      `[D □ Abort [13C${FOCUS} ■ Fail [7D`
     );
 
     form.next();
     escpaint(canvas).should.eql(
-      `[D${GRAY_BG} □ Fail [4;11H${BLUE_BG} ■ Save [7D`
+      `[D${NORMAL} □ Fail [4;11H${FOCUS} ■ Save [7D`
     );
 
     form.prev();
     escpaint(canvas).should.eql(
-      `[2;33H ■ Fail [4;11H${GRAY_BG} □ Save [2;34H`
+      `[2;33H ■ Fail [4;11H${NORMAL} □ Save [2;34H`
     );
   });
 
@@ -206,4 +207,57 @@ describe("Form", () => {
     form.feed(Key.normal(0, " "));
     event.should.eql("fail");
   });
-})
+
+  it("draws edit box", () => {
+    const canvas = new Canvas(45, 8);
+    const box = new FormEditBox("test content", { minHeight: 3, maxHeight: 5 });
+    const form = new Form(
+      canvas.all(),
+      [ { component: box, label: "Gripes" } ],
+      { left: GridLayout.fixed(10) },
+    );
+
+    escpaint(canvas).should.eql(
+      `${CLEAR}[2;4H${LABEL}Gripes ` +
+      `${FOCUS}test content[K[22C${DIM}[40m ` +
+      `[3;11H${FOCUS}[K[34C${DIM}[40m ` +
+      `[4;11H${FOCUS}[K[34C${DIM}[40m ` +
+      `[2;23H`
+    );
+  });
+
+  it("draws edit box without focus", () => {
+    const canvas = new Canvas(45, 8);
+    const button = new FormButtons([ { text: RichText.parse("OK") } ]);
+    const box = new FormEditBox("test content", { minHeight: 3, maxHeight: 5 });
+    const form = new Form(
+      canvas.all(),
+      [ { component: button }, { component: box, label: "Gripes" } ],
+      { left: GridLayout.fixed(10) },
+    );
+
+    escpaint(canvas).should.eql(
+      `${CLEAR}[2;11H${FOCUS} ■ OK ` +
+      `[4;4H${DIM}[40mGripes ` +
+      `${NORMAL}test content[K[22C${DIM}[40m ` +
+      `[5;11H${NORMAL}[K[34C${DIM}[40m ` +
+      `[6;11H${NORMAL}[K[34C${DIM}[40m ` +
+      `[2;12H`
+    );
+  });
+
+  it("draws narrow edit box", () => {
+    const canvas = new Canvas(45, 8);
+    const box = new FormEditBox("test", { maxLength: 10 });
+    const form = new Form(
+      canvas.all(),
+      [ { component: box, label: "Gripes" } ],
+      { left: GridLayout.fixed(10) },
+    );
+
+    escpaint(canvas).should.eql(
+      `${CLEAR}[2;4H${LABEL}Gripes ` +
+      `${FOCUS}test      [6D`
+    );
+  });
+});

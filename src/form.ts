@@ -3,6 +3,7 @@ import { lpad } from "./rich_text";
 import { ScrollView, ScrollViewConfig } from "./scroll_view";
 
 export { FormButton, FormButtons, FormButtonsConfig } from "./form/form_buttons";
+export { FormEditBox, FormEditBoxConfig } from "./form/form_edit_box";
 export { FormText, FormTextConfig } from "./form/form_text";
 
 export interface FormConfig {
@@ -43,7 +44,7 @@ export interface FormComponent {
   computeHeight(width: number): number;
 
   // draw the component from scratch. when focused, please move the cursor too.
-  draw(region: Region): void;
+  draw(region: Region, form: Form): void;
 
   // want to find out when you're focused?
   takeFocus?(direction: number): void;
@@ -84,6 +85,7 @@ export class Form {
 
   constructor(public region: Region, public fields: FormField[], options: Partial<FormConfig> = {}) {
     this.config = Object.assign({}, DEFAULT_CONFIG, options);
+    this.config.scrollViewConfig = Object.assign({}, DEFAULT_CONFIG.scrollViewConfig, options.scrollViewConfig);
     this.scrollView = new ScrollView(region, this.config.scrollViewConfig);
     this.canvas = this.scrollView.content;
     this.canvas.resize(this.canvas.cols, this.fields.length);
@@ -125,7 +127,7 @@ export class Form {
           i == this.focus ? this.config.labelFocusBackground : this.config.labelBackground,
         ).clear().at(0, 0).write(lpad(label, labelWidth));
       }
-      f.component.draw(this.regions[i]);
+      f.component.draw(this.regions[i], this);
     });
     this.ensureFocus();
   }
@@ -198,9 +200,9 @@ export class Form {
     if (oldFocus != this.focus) {
       this.tellFocus(oldFocus, false, 1);
       this.tellFocus(this.focus, true, 1);
-      this.fields[oldFocus].component.draw(this.regions[oldFocus]);
+      this.fields[oldFocus].component.draw(this.regions[oldFocus], this);
     }
-    this.fields[this.focus].component.draw(this.regions[this.focus]);
+    this.fields[this.focus].component.draw(this.regions[this.focus], this);
     this.ensureFocus();
   }
 
@@ -210,9 +212,9 @@ export class Form {
     if (oldFocus != this.focus) {
       this.tellFocus(oldFocus, false, -1);
       this.tellFocus(this.focus, true, -1);
-      this.fields[oldFocus].component.draw(this.regions[oldFocus]);
+      this.fields[oldFocus].component.draw(this.regions[oldFocus], this);
     }
-    this.fields[this.focus].component.draw(this.regions[this.focus]);
+    this.fields[this.focus].component.draw(this.regions[this.focus], this);
     this.ensureFocus();
   }
 }

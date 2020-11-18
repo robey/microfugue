@@ -22,8 +22,8 @@ export interface FormButtonsConfig {
 }
 
 const DEFAULT_TEXT_CONFIG: FormButtonsConfig = {
-  color: "555",
-  textColor: "fff",
+  color: "333",
+  textColor: "999",
   focusColor: "007",
   focusTextColor: "fff",
   horizontalPadding: 1,

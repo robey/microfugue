@@ -31,6 +31,9 @@ export interface EditBoxConfig {
 
   // generate a text event on "enter"? if not, this is a "passive" edit box.
   commitOnEnter: boolean;
+
+  // own the cursor?
+  alwaysFocused: boolean;
 }
 
 const DEFAULT_CONFIG: EditBoxConfig = {
@@ -43,6 +46,7 @@ const DEFAULT_CONFIG: EditBoxConfig = {
   allowScroll: false,
   useHistory: true,
   commitOnEnter: true,
+  alwaysFocused: true,
 };
 
 export class EditBox {
@@ -86,6 +90,11 @@ export class EditBox {
     this.redraw();
   }
 
+  reconfigure(config: Partial<EditBoxConfig>) {
+    this.config = Object.assign({}, this.config, config);
+    this.redraw();
+  }
+
   clearHistory() {
     this.history = [];
     this.historyIndex = 0;
@@ -107,7 +116,7 @@ export class EditBox {
     this.visiblePos = 0;
     this.historyIndex = this.history.length;
     this.saved = "";
-    this.moveCursor();
+    if (this.config.alwaysFocused) this.moveCursor();
     this.setIdealHeight(1);
   }
 
@@ -123,7 +132,7 @@ export class EditBox {
   }
 
   redraw() {
-    if (this.moveCursor()) return;
+    if (this.config.alwaysFocused && this.moveCursor()) return;
     this._redraw();
   }
 
