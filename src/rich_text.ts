@@ -15,7 +15,7 @@ export class RichText {
   //   - `{color:...}` will mark a section as being in a color
   //   - can be nested
   //   - `\{` avoids this parsing
-  static parse(s: string, defaultColor: string): RichText {
+  static parse(s: string, defaultColor: string = "default"): RichText {
     let i = 0;
     const end = s.length;
     let spans: Span[] = [];
@@ -182,10 +182,10 @@ export class RichText {
     return rv;
   }
 
-  render(region: Region, colorAliases?: Map<string, string>) {
+  render(region: Region, colorAliases?: Map<string, string>, defaultColor?: string) {
     for (const span of this.spans) {
       const color = colorAliases?.get(this.color) ?? this.color;
-      region.color(color);
+      region.color(color == "default" ? defaultColor : color);
       if (typeof span === "string") {
         region.write(span);
       } else {
@@ -193,4 +193,10 @@ export class RichText {
       }
     }
   }
+}
+
+
+export function lpad(s: string, len: number): string {
+  while (s.length < len) s = ("          " + s).slice(-len);
+  return s;
 }
