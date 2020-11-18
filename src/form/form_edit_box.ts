@@ -1,4 +1,4 @@
-import { Region } from "antsy";
+import { Key, Region } from "antsy";
 import { EditBox } from "../edit_box";
 import { Form, FormComponent } from "../form";
 
@@ -90,5 +90,13 @@ export class FormEditBox implements FormComponent {
     setTimeout(() => {
       if (this.form) this.form.redraw();
     }, 1);
+  }
+
+  feed(key: Key) {
+    if (this.editBox) this.editBox.feed(key);
+  }
+
+  get text(): string {
+    return this.editBox?.line ?? this.content;
   }
 }

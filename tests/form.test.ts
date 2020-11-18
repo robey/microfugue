@@ -260,4 +260,36 @@ describe("Form", () => {
       `${FOCUS}test      [6D`
     );
   });
+
+  it("handles keys", () => {
+    const canvas = new Canvas(45, 8);
+    const button = new FormButtons([ { text: RichText.parse("OK") } ]);
+    const box = new FormEditBox("test content", { minHeight: 3, maxHeight: 5 });
+    const form = new Form(
+      canvas.all(),
+      [ { component: box, label: "Gripes" }, { component: button } ],
+      { left: GridLayout.fixed(10) },
+    );
+
+    escpaint(canvas).should.eql(
+      `${CLEAR}[2;4H${LABEL}Gripes ` +
+      `${FOCUS}test content[K[22C${DIM}[40m ` +
+      `[3;11H${FOCUS}[K[34C${DIM}[40m ` +
+      `[4;11H${FOCUS}[K[34C${DIM}[40m ` +
+      `[6;11H${NORMAL} □ OK ` +
+      `[2;23H`
+    );
+
+    form.feed(Key.normal(0, "!"));
+    form.feed(new Key(0, KeyType.Tab));
+    escpaint(canvas).should.eql(
+      `[12Dtest content![K[21C${DIM}[40m ` +
+      `[3;11H${NORMAL}[K[34C${DIM}[40m ` +
+      `[4;11H${NORMAL}[K[34C${DIM}[40m ` +
+      `[6;11H${FOCUS} ■ OK ` +
+      `[5D`
+    );
+
+    box.text.should.eql("test content!");
+  });
 });
