@@ -14,6 +14,9 @@ export interface ScrollViewConfig {
 
   // hide the scrollbar when it's not needed?
   autoHide: boolean;
+
+  // if the content is smaller than the frame, push it to the top?
+  gravityIsTop: boolean;
 }
 
 const DEFAULT_CONFIG: ScrollViewConfig = {
@@ -23,6 +26,7 @@ const DEFAULT_CONFIG: ScrollViewConfig = {
   trackChar: TRACK,
   barChar: BAR,
   autoHide: true,
+  gravityIsTop: false,
 };
 
 // turn a region into a scrolling frame that views part of a taller (in rows)
@@ -80,7 +84,12 @@ export class ScrollView {
     }
     this.drawScrollBar();
     const y = Math.max(this.frame.rows - this.content.rows, 0);
-    this.frame.at(0, y).draw(this.content.clip(0, this.frameTop, this.frame.cols, this.frameBottom));
+    if (y > 0 && this.config.gravityIsTop) {
+      this.frameTop = -y;
+      this.frame.at(0, 0).draw(this.content.clip(0, 0, this.frame.cols, this.frameBottom));
+    } else {
+      this.frame.at(0, y).draw(this.content.clip(0, this.frameTop, this.frame.cols, this.frameBottom));
+    }
   }
 
   drawScrollBar() {
@@ -159,5 +168,13 @@ export class ScrollView {
     this.frameTop = Math.max(0, Math.min(translate(this.frameTop), this.content.rows - this.frame.rows));
     this.pinnedToBottom = (this.frameBottom == this.content.rows);
     this.redraw();
+  }
+
+  // if the cursor in the canvas is in view, move it to the same place in our view
+  setCursor() {
+    const [ x, y ] = this.content.cursor;
+    if (y >= this.frameTop && y < this.frameBottom) {
+      this.frame.moveCursor(x, y - Math.max(this.frameTop, 0));
+    }
   }
 }

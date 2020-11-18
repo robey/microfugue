@@ -44,6 +44,19 @@ describe("ScrollView", () => {
     escpaint(canvas).should.eql("[37m[40m[2J[H[9B[38;5;15mhello[H");
   });
 
+  it("pushes small content to the top when asked", () => {
+    const canvas = new Canvas(20, 10);
+    const sv = new ScrollView(canvas.all(), Object.assign({}, STANDARD_OPTIONS, { gravityIsTop: true }));
+    sv.content.resize(19, 1);
+    sv.content.all().at(0, 0).color("white").write("hello");
+    sv.redraw();
+
+    // everything should be on display, and no scrollbar
+    sv.frameTop.should.eql(-9);
+    sv.frameBottom.should.eql(1);
+    escpaint(canvas).should.eql("[37m[40m[2J[H[38;5;15mhello[5D");
+  });
+
   it("correctly draws the scrollbar", () => {
     const canvas = new Canvas(20, 10);
     const sv = new ScrollView(canvas.all(), STANDARD_OPTIONS);
