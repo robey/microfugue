@@ -17,6 +17,9 @@ export interface FormConfig {
   labelFocusColor: string;
   labelFocusBackground: string;
 
+  // how many spaces between the label and the component?
+  labelSpacing: number;
+
   // override the scroll bar display
   scrollViewConfig: Partial<ScrollViewConfig>;
 
@@ -31,6 +34,7 @@ const DEFAULT_CONFIG: FormConfig = {
   labelBackground: "000",
   labelFocusColor: "ccc",
   labelFocusBackground: "000",
+  labelSpacing: 1,
   scrollViewConfig: { gravityIsTop: true },
   verticalPadding: 1,
 };
@@ -117,16 +121,19 @@ export class Form {
     const cols = [ this.config.left, this.config.right ];
     this.layout.update(cols, heights.map(y => GridLayout.fixed(y)));
 
-    const labelWidth = this.labelRegions[0].cols - 1;
+    const labelWidth = this.labelRegions[0].cols - this.config.labelSpacing;
     this.fields.forEach((f, i) => {
       if (!f.fullWidth && f.label !== undefined) {
         let label = f.label;
         if (label.length > labelWidth) label = label.slice(0, labelWidth - 1) + "…";
-        this.labelRegions[i].color(
+        this.labelRegions[i].backgroundColor(this.config.labelBackground).clear().color(
           i == this.focus ? this.config.labelFocusColor : this.config.labelColor,
           i == this.focus ? this.config.labelFocusBackground : this.config.labelBackground,
         ).clear().at(0, 0).write(lpad(label, labelWidth));
       }
+
+      // clear out vertical space:
+      this.regions[i].backgroundColor(this.config.labelBackground).clear();
       f.component.draw(this.regions[i], this);
     });
     this.ensureFocus();
