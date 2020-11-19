@@ -90,6 +90,8 @@ export class ScrollView {
     } else {
       this.frame.at(0, y).draw(this.content.clip(0, this.frameTop, this.frame.cols, this.frameBottom));
     }
+    // tell the content it's been drawn:
+    this.content.paint();
   }
 
   drawScrollBar() {

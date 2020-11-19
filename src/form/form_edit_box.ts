@@ -1,4 +1,4 @@
-import { Key, Region } from "antsy";
+import { GridLayout, Key, Region } from "antsy";
 import { EditBox } from "../edit_box";
 import { Form, FormComponent } from "../form";
 
@@ -30,6 +30,7 @@ export class FormEditBox implements FormComponent {
   config: FormEditBoxConfig;
   focused = false;
   form?: Form;
+  layout?: GridLayout;
   editBox?: EditBox;
   height: number;
 
@@ -67,10 +68,14 @@ export class FormEditBox implements FormComponent {
   draw(region: Region, form: Form) {
     if (!this.form) this.form = form;
     if (!this.editBox) {
-      const boxRegion = region.cols > this.config.maxLength ?
-        region.clip(0, 0, this.config.maxLength, this.height) :
-        region.clip(0, 0, region.cols, this.height);
-      this.editBox = new EditBox(boxRegion, {
+      // constrain the editing part to max len & height
+      this.layout = new GridLayout(
+        region,
+        [ GridLayout.fixed(this.config.maxLength) ],
+        [ GridLayout.fixed(this.height) ]
+      );
+
+      this.editBox = new EditBox(this.layout.layoutAt(0, 0), {
         color: this.focused ? this.config.focusTextColor : this.config.textColor,
         backgroundColor: this.focused ? this.config.focusColor : this.config.color,
         maxLength: this.config.maxLength,
@@ -88,8 +93,9 @@ export class FormEditBox implements FormComponent {
   resizeHeight(lines: number) {
     this.height = Math.min(this.config.maxHeight, Math.max(this.config.minHeight, lines));
     setTimeout(() => {
+      if (this.layout) this.layout.adjustRow(0, GridLayout.fixed(this.height));
       if (this.form) this.form.redraw();
-    }, 1);
+    }, 0);
   }
 
   feed(key: Key) {
