@@ -2,7 +2,7 @@ import { Canvas, Constraint, GridLayout, Key, KeyType, Modifier, Region } from "
 import { lpad } from "./rich_text";
 import { ScrollView, ScrollViewConfig } from "./scroll_view";
 
-export { FormButton, FormButtons, FormButtonsConfig } from "./form/form_buttons";
+export { FormButton, FormButtonConfig } from "./form/form_button";
 export { FormEditBox, FormEditBoxConfig } from "./form/form_edit_box";
 export { FormText, FormTextConfig } from "./form/form_text";
 

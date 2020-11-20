@@ -1,6 +1,6 @@
 import "should";
 import { Canvas, GridLayout, Key, KeyType, Modifier } from "antsy";
-import { Form, FormButtons, FormEditBox, FormText, RichText } from "..";
+import { Form, FormButton, FormEditBox, FormText, RichText } from "..";
 
 const RESET = `[37m[40m`;
 const CLEAR = RESET + `[2J[H`;
@@ -16,6 +16,9 @@ const FOCUS = WHITE + BLUE_BG;
 const NORMAL = GRAY + GRAY_BG;
 
 const escpaint = (c: Canvas): string => c.paint().replace(/\u001b\[/g, "[");
+
+const delay = (msec: number) => new Promise(resolve => setTimeout(resolve, msec));
+
 
 describe("Form", () => {
   it("draws text", () => {
@@ -112,184 +115,133 @@ describe("Form", () => {
     );
   });
 
-  it("draws buttons", () => {
-    const canvas = new Canvas(30, 8);
-    const buttons = new FormButtons([
-      { text: RichText.parse("OK") },
-      { text: RichText.parse("Cancel") }
-    ]);
-    const form = new Form(
-      canvas.all(),
-      [ { component: buttons, label: "Done?" } ],
-      { left: GridLayout.fixed(10) },
-    );
-
-    escpaint(canvas).should.eql(
-      `${CLEAR}[2;5H${LABEL}Done? ${FOCUS} ■ OK ${RESET}  ${NORMAL} □ Cancel [17D`
-    );
-  });
-
-  it("focuses buttons", () => {
-    const canvas = new Canvas(30, 8);
-    const buttons = new FormButtons([
-      { text: RichText.parse("OK") },
-      { text: RichText.parse("Cancel") }
-    ]);
-    const form = new Form(
-      canvas.all(),
-      [ { component: buttons, label: "Done?" } ],
-      { left: GridLayout.fixed(10) },
-    );
-
-    escpaint(canvas).should.eql(
-      `${CLEAR}[2;5H${LABEL}Done? ${FOCUS} ■ OK ${RESET}  ${NORMAL} □ Cancel [17D`
-    );
-    form.next();
-    escpaint(canvas).should.eql(
-      `[D □ OK ${RESET}  ${FOCUS} ■ Cancel [9D`
-    );
-  });
-
-  it("focuses between button rows", () => {
-    const canvas = new Canvas(45, 8);
-    const buttons = new FormButtons([
-      { text: RichText.parse("Abort") },
-      { text: RichText.parse("Retry") },
-      { text: RichText.parse("Fail") },
-    ]);
-    const buttons2 = new FormButtons([ { text: RichText.parse("Save") } ]);
-    const form = new Form(
-      canvas.all(),
-      [ { component: buttons, label: "Error!" }, { component: buttons2 } ],
-      { left: GridLayout.fixed(10) },
-    );
-
-    escpaint(canvas).should.eql(
-      `${CLEAR}[2;4H${LABEL}Error! ` +
-      `${FOCUS} ■ Abort ${RESET}  ${NORMAL} □ Retry ${RESET}  ${NORMAL} □ Fail ` +
-      `[4;11H □ Save [2;12H`
-    );
-    form.next();
-    form.next();
-    escpaint(canvas).should.eql(
-      `[D □ Abort [13C${FOCUS} ■ Fail [7D`
-    );
-
-    form.next();
-    escpaint(canvas).should.eql(
-      `[D${NORMAL} □ Fail [4;11H${FOCUS} ■ Save [7D`
-    );
-
-    form.prev();
-    escpaint(canvas).should.eql(
-      `[2;33H ■ Fail [4;11H${NORMAL} □ Save [2;34H`
-    );
-  });
-
-  it("button events", () => {
+  it("button", () => {
     let event = "";
-    const canvas = new Canvas(45, 8);
-    const buttons = new FormButtons([
-      { text: RichText.parse("Abort"), onClick: () => { event = "abort" } },
-      { text: RichText.parse("Retry") },
-      { text: RichText.parse("Fail"), onClick: () => { event = "fail" } },
-    ]);
+    const canvas = new Canvas(30, 8);
+    const button = new FormButton(RichText.parse("OK"), () => { event = "ok" });
     const form = new Form(
       canvas.all(),
-      [ { component: buttons, label: "Error!" } ],
+      [ { component: button, label: "Done?" } ],
       { left: GridLayout.fixed(10) },
     );
 
-    form.feed(new Key(0, KeyType.Return));
-    event.should.eql("abort");
-    form.next();
-    form.next();
+    escpaint(canvas).should.eql(
+      `${CLEAR}[2;5H${LABEL}Done? ${FOCUS}▶ OK ◀[4D`
+    );
+
     form.feed(Key.normal(0, " "));
-    event.should.eql("fail");
+    event.should.eql("ok");
   });
 
-  it("draws edit box", () => {
-    const canvas = new Canvas(45, 8);
-    const box = new FormEditBox("test content", { minHeight: 3, maxHeight: 5 });
-    const form = new Form(
-      canvas.all(),
-      [ { component: box, label: "Gripes" } ],
-      { left: GridLayout.fixed(10) },
-    );
+  describe("edit box", () => {
+    it("draws", () => {
+      const canvas = new Canvas(45, 8);
+      const box = new FormEditBox("test content", { minHeight: 3, maxHeight: 5 });
+      const form = new Form(
+        canvas.all(),
+        [ { component: box, label: "Gripes" } ],
+        { left: GridLayout.fixed(10) },
+      );
 
-    escpaint(canvas).should.eql(
-      `${CLEAR}[2;4H${LABEL}Gripes ` +
-      `${FOCUS}test content[K[22C${DIM}[40m ` +
-      `[3;11H${FOCUS}[K[34C${DIM}[40m ` +
-      `[4;11H${FOCUS}[K[34C${DIM}[40m ` +
-      `[2;23H`
-    );
-  });
+      escpaint(canvas).should.eql(
+        `${CLEAR}[2;4H${LABEL}Gripes ` +
+        `${FOCUS}test content[K[22C${DIM}[40m ` +
+        `[3;11H${FOCUS}[K[34C${DIM}[40m ` +
+        `[4;11H${FOCUS}[K[34C${DIM}[40m ` +
+        `[2;23H`
+      );
+    });
 
-  it("draws edit box without focus", () => {
-    const canvas = new Canvas(45, 8);
-    const button = new FormButtons([ { text: RichText.parse("OK") } ]);
-    const box = new FormEditBox("test content", { minHeight: 3, maxHeight: 5 });
-    const form = new Form(
-      canvas.all(),
-      [ { component: button }, { component: box, label: "Gripes" } ],
-      { left: GridLayout.fixed(10) },
-    );
+    it("draws without focus", () => {
+      const canvas = new Canvas(45, 8);
+      const button = new FormButton(RichText.parse("OK"), () => null);
+      const box = new FormEditBox("test content", { minHeight: 3, maxHeight: 5 });
+      const form = new Form(
+        canvas.all(),
+        [ { component: button }, { component: box, label: "Gripes" } ],
+        { left: GridLayout.fixed(10) },
+      );
 
-    escpaint(canvas).should.eql(
-      `${CLEAR}[2;11H${FOCUS} ■ OK ` +
-      `[4;4H${DIM}[40mGripes ` +
-      `${NORMAL}test content[K[22C${DIM}[40m ` +
-      `[5;11H${NORMAL}[K[34C${DIM}[40m ` +
-      `[6;11H${NORMAL}[K[34C${DIM}[40m ` +
-      `[2;12H`
-    );
-  });
+      escpaint(canvas).should.eql(
+        `${CLEAR}[2;11H${FOCUS}▶ OK ◀` +
+        `[4;4H${DIM}[40mGripes ` +
+        `${NORMAL}test content[K[22C${DIM}[40m ` +
+        `[5;11H${NORMAL}[K[34C${DIM}[40m ` +
+        `[6;11H${NORMAL}[K[34C${DIM}[40m ` +
+        `[2;13H`
+      );
+    });
 
-  it("draws narrow edit box", () => {
-    const canvas = new Canvas(45, 8);
-    const box = new FormEditBox("test", { maxLength: 10 });
-    const form = new Form(
-      canvas.all(),
-      [ { component: box, label: "Gripes" } ],
-      { left: GridLayout.fixed(10) },
-    );
+    it("draws narrow", () => {
+      const canvas = new Canvas(45, 8);
+      const box = new FormEditBox("test", { maxLength: 10 });
+      const form = new Form(
+        canvas.all(),
+        [ { component: box, label: "Gripes" } ],
+        { left: GridLayout.fixed(10) },
+      );
 
-    escpaint(canvas).should.eql(
-      `${CLEAR}[2;4H${LABEL}Gripes ` +
-      `${FOCUS}test      [6D`
-    );
-  });
+      escpaint(canvas).should.eql(
+        `${CLEAR}[2;4H${LABEL}Gripes ` +
+        `${FOCUS}test      [6D`
+      );
+    });
 
-  it("handles keys", () => {
-    const canvas = new Canvas(45, 8);
-    const button = new FormButtons([ { text: RichText.parse("OK") } ]);
-    const box = new FormEditBox("test content", { minHeight: 3, maxHeight: 5 });
-    const form = new Form(
-      canvas.all(),
-      [ { component: box, label: "Gripes" }, { component: button } ],
-      { left: GridLayout.fixed(10) },
-    );
+    it("handles keys", () => {
+      const canvas = new Canvas(45, 8);
+      const button = new FormButton(RichText.parse("OK"), () => null);
+      const box = new FormEditBox("test content", { minHeight: 3, maxHeight: 5 });
+      const form = new Form(
+        canvas.all(),
+        [ { component: box, label: "Gripes" }, { component: button } ],
+        { left: GridLayout.fixed(10) },
+      );
 
-    escpaint(canvas).should.eql(
-      `${CLEAR}[2;4H${LABEL}Gripes ` +
-      `${FOCUS}test content[K[22C${DIM}[40m ` +
-      `[3;11H${FOCUS}[K[34C${DIM}[40m ` +
-      `[4;11H${FOCUS}[K[34C${DIM}[40m ` +
-      `[6;11H${NORMAL} □ OK ` +
-      `[2;23H`
-    );
+      escpaint(canvas).should.eql(
+        `${CLEAR}[2;4H${LABEL}Gripes ` +
+        `${FOCUS}test content[K[22C${DIM}[40m ` +
+        `[3;11H${FOCUS}[K[34C${DIM}[40m ` +
+        `[4;11H${FOCUS}[K[34C${DIM}[40m ` +
+        `[6;11H${NORMAL}  OK  ` +
+        `[2;23H`
+      );
 
-    form.feed(Key.normal(0, "!"));
-    form.feed(new Key(0, KeyType.Tab));
-    escpaint(canvas).should.eql(
-      `[12Dtest content![K[21C${DIM}[40m ` +
-      `[3;11H${NORMAL}[K[34C${DIM}[40m ` +
-      `[4;11H${NORMAL}[K[34C${DIM}[40m ` +
-      `[6;11H${FOCUS} ■ OK ` +
-      `[5D`
-    );
+      form.feed(Key.normal(0, "!"));
+      form.feed(new Key(0, KeyType.Tab));
+      escpaint(canvas).should.eql(
+        `[12Dtest content![K[21C${DIM}[40m ` +
+        `[3;11H${NORMAL}[K[34C${DIM}[40m ` +
+        `[4;11H${NORMAL}[K[34C${DIM}[40m ` +
+        `[6;11H${FOCUS}▶ OK ◀` +
+        `[4D`
+      );
 
-    box.text.should.eql("test content!");
+      box.text.should.eql("test content!");
+    });
+
+    it("grows and shrinks", async () => {
+      const canvas = new Canvas(30, 8);
+      const button = new FormButton(RichText.parse("OK"), () => null);
+      const box = new FormEditBox("test content", { minHeight: 1, maxHeight: 3 });
+      const form = new Form(
+        canvas.all(),
+        [ { component: box, label: "Gripes" }, { component: button } ],
+        { left: GridLayout.fixed(10), labelSpacing: 2 },
+      );
+
+      escpaint(canvas).should.eql(
+        `${CLEAR}[2;3H${LABEL}Gripes  ` +
+        `${FOCUS}test content       ` +
+        `[4;11H${NORMAL}  OK  ` +
+        `[2;23H`
+      );
+
+      for (const ch of " for you!") form.feed(Key.normal(0, ch));
+      await delay(10);
+
+      escpaint(canvas).should.eql(
+        `${FOCUS} for yo[3;11Hu![K[17C${DIM}[40m [4H${LABEL}[K[5;11H${NORMAL}  OK  [3;13H`
+      );
+    });
   });
 });
