@@ -4,6 +4,7 @@ import { ScrollView, ScrollViewConfig } from "./scroll_view";
 
 export { FormButton, FormButtonConfig } from "./form/form_button";
 export { FormEditBox, FormEditBoxConfig } from "./form/form_edit_box";
+export { FormRow, FormRowConfig } from "./form/form_row";
 export { FormText, FormTextConfig } from "./form/form_text";
 
 export interface FormConfig {
@@ -202,12 +203,12 @@ export class Form {
   private shiftFocus(direction: number): void {
     // if it can stay within one component, let it.
     if (this.focus >= 0 && this.focus < this.fields.length) {
-    const component = this.fields[this.focus].component;
+      const component = this.fields[this.focus].component;
       if (component.shiftFocus && component.shiftFocus(direction)) {
         this.fields[this.focus].component.draw();
         this.ensureFocus();
         return;
-  }
+      }
     }
 
     // bail if nothing accepts focus.
@@ -219,7 +220,7 @@ export class Form {
     this.focus += direction;
     while (this.focus >= 0 && this.focus < this.fields.length && !this.fields[this.focus].component.acceptsFocus) {
       this.focus += direction;
-  }
+    }
     // if we hit the end, bounce back.
     if (this.focus < 0 || this.focus >= this.fields.length) return this.shiftFocus(-direction);
 
