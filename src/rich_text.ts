@@ -189,7 +189,7 @@ export class RichText {
       if (typeof span === "string") {
         region.write(span);
       } else {
-        span.render(region, colorAliases);
+        span.render(region, colorAliases, defaultColor);
       }
     }
   }

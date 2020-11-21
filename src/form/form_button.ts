@@ -71,13 +71,14 @@ export class FormButton implements FormComponent {
       this.region.at(0, y + this.config.verticalPadding + 1).write(lpad("", this.width));
     }
 
+    const fg = this.focused ? this.config.focusTextColor : this.config.textColor;
+    const bg = this.focused ? this.config.focusColor : this.config.color;
     this.region.at(0, this.config.verticalPadding);
-    this.region.backgroundColor(this.focused ? this.config.focusColor : this.config.color);
-    this.region.color(this.focused ? this.config.focusTextColor : this.config.textColor);
+    this.region.color(fg, bg);
     this.region.write(this.focused ? this.config.focusBadgeLeft : lpad("", this.config.focusBadgeLeft.length));
     this.region.write(lpad("", this.config.horizontalPadding));
     if (this.focused) this.region.moveCursor();
-    this.text.render(this.region, this.config.colorAliases);
+    this.text.render(this.region, this.config.colorAliases, fg);
     this.region.write(lpad("", this.config.horizontalPadding));
     this.region.write(this.focused ? this.config.focusBadgeRight : lpad("", this.config.focusBadgeRight.length));
   }
