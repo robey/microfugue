@@ -94,6 +94,9 @@ export class Form {
   labelRegions: Region[];
   regions: Region[];
 
+  // allow custom key bindings
+  customBindings: [ Key, (key: Key, form: Form) => void ][] = [];
+
   constructor(public region: Region, public fields: FormField[], options: Partial<FormConfig> = {}) {
     this.config = Object.assign({}, DEFAULT_CONFIG, options);
     this.config.scrollViewConfig = Object.assign({}, DEFAULT_CONFIG.scrollViewConfig, options.scrollViewConfig);
@@ -160,6 +163,11 @@ export class Form {
   }
 
   feed(key: Key) {
+    for (const [ k, f ] of this.customBindings) if (key.equals(k)) {
+      f(key, this);
+      return;
+    }
+
     // first, handle focus change (tab, S-tab, C-up, C-down)
     if (key.modifiers == 0) {
       switch (key.type) {
@@ -214,8 +222,10 @@ export class Form {
     // bail if nothing accepts focus.
     if (!this.fields.some(f => f.component.acceptsFocus)) return;
 
-    this.fields[this.focus].component.loseFocus?.(direction);
-    this.fields[this.focus].component.draw();
+    if (this.focus >= 0 && this.focus < this.fields.length) {
+      this.fields[this.focus].component.loseFocus?.(direction);
+      this.fields[this.focus].component.draw();
+    }
 
     this.focus += direction;
     while (this.focus >= 0 && this.focus < this.fields.length && !this.fields[this.focus].component.acceptsFocus) {
@@ -235,5 +245,15 @@ export class Form {
 
   prev() {
     this.shiftFocus(-1);
+  }
+
+  clearBindings() {
+    this.customBindings = [];
+  }
+
+  bind(key: Key, f: (key: Key, form: Form) => void) {
+    const index = this.customBindings.findIndex(([ k, _ ]) => k.equals(key));
+    if (index >= 0) this.customBindings.splice(index, 1);
+    this.customBindings.push([ key, f ]);
   }
 }

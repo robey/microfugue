@@ -133,6 +133,38 @@ describe("Form", () => {
     event.should.eql("ok");
   });
 
+  it("focus", () => {
+    let event = "";
+    const canvas = new Canvas(30, 8);
+    const button1 = new FormButton(RichText.parse("OK"), () => { event = "ok" });
+    const button2 = new FormButton(RichText.parse("Cancel"), () => { event = "cancel" });
+    const form = new Form(
+      canvas.all(),
+      [ { component: button1, label: "Done?" }, { component: button2 } ],
+      { left: GridLayout.fixed(10) },
+    );
+
+    escpaint(canvas).should.eql(
+      `${CLEAR}[2;5H${LABEL}Done? ${FOCUS}▶ OK ◀` +
+      `[4;11H${NORMAL}  Cancel  ` +
+      `[2;13H`
+    );
+
+    form.next();
+    escpaint(canvas).should.eql(
+      `[2D  OK  [4;11H${FOCUS}▶ Cancel ◀[8D`
+    );
+
+    // don't crash
+    form.next();
+    escpaint(canvas).should.eql("");
+
+    form.prev();
+    escpaint(canvas).should.eql(
+      `[2;11H▶ OK ◀[4;11H${NORMAL}  Cancel  [2;13H`
+    );
+  });
+
   describe("edit box", () => {
     it("draws", () => {
       const canvas = new Canvas(45, 8);
