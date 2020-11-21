@@ -44,11 +44,17 @@ export interface FormComponent {
   // can this component interact? or is it passive?
   acceptsFocus: boolean;
 
+  // what's an acceptable width, if this component were stacked in a row with others?
+  constraint: Constraint;
+
   // given this region width, how many rows do you need?
   computeHeight(width: number): number;
 
+  // assign a form and a region to draw into. may be called multiple times on radical reflow.
+  attach(region: Region, form: Form): void;
+
   // draw the component from scratch. when focused, please move the cursor too.
-  draw(region: Region, form: Form): void;
+  draw(): void;
 
   // want to find out when you're focused?
   takeFocus?(direction: number): void;
@@ -81,7 +87,7 @@ export class Form {
   scrollView: ScrollView;
   canvas: Canvas;
   layout: GridLayout;
-  focus = 0;
+  focus = -1;
 
   // clip regions for each component (and optional label)
   labelRegions: Region[];
@@ -94,25 +100,38 @@ export class Form {
     this.canvas = this.scrollView.content;
     this.canvas.resize(this.canvas.cols, this.fields.length);
 
-    // find first focus-able component and give it focus
-    if (!this.fields[this.focus].component.acceptsFocus) this.focus = this.getNextFocus();
-    this.tellFocus(this.focus, true, 1);
+    // find first focus-able component and give it focus.
+    // if none are focus-able, force the first component to be "it".
+    this.focus = 0;
+    if (this.fields.some(f => f.component.acceptsFocus)) {
+      while (this.focus < this.fields.length && !this.fields[this.focus].component.acceptsFocus) {
+        this.focus++;
+      }
+    }
+    this.fields[this.focus].component.takeFocus?.(1);
 
     // make a grid with 1-height rows first, then resize for real, once we know the column widths
     const cols = [ this.config.left, this.config.right ];
     const fakeRows = fields.map(_ => GridLayout.fixed(1));
     // extra row for the top margin (if any)
-    fakeRows.push(GridLayout.fixed(this.config.verticalPadding));
+    fakeRows.push(GridLayout.fixed(1));
     this.layout = new GridLayout(this.canvas.all(), cols, fakeRows);
-    this.regions = this.fields.map((f, i) => this.layout.layout(f.fullWidth ? 0 : 1, i + 1, 2, i + 2));
     this.labelRegions = this.fields.map((_, i) => this.layout.layout(0, i + 1, 1, i + 2));
+    this.regions = [];
+    this.fields.forEach((f, i) => {
+      const region = this.layout.layout(f.fullWidth ? 0 : 1, i + 1, 2, i + 2);
+      f.component.attach(region, this);
+      this.regions.push(region);
+    });
     this.redraw();
   }
 
   redraw() {
     // top grid row is vertical padding; the rest of the padding is the last row of each component
     const heights = this.fields.map((f, i) => {
-      return f.component.computeHeight(this.regions[i].cols) + this.config.verticalPadding;
+      const h = f.component.computeHeight(this.regions[i].cols);
+      // even if your height is 0, if you have a label, you've got 1 line
+      return Math.max(h, f.label !== undefined ? 1 : 0) + this.config.verticalPadding;
     });
     heights.unshift(this.config.verticalPadding);
     const height = heights.reduce((sum, b) => sum + b, 0);
@@ -134,7 +153,7 @@ export class Form {
 
       // clear out vertical space:
       this.regions[i].backgroundColor(this.config.labelBackground).clear();
-      f.component.draw(this.regions[i], this);
+      f.component.draw();
     });
     this.ensureFocus();
   }
@@ -162,6 +181,7 @@ export class Form {
 
     const component = this.fields[this.focus].component;
     if (component.feed) component.feed(key, this);
+    this.ensureFocus();
   }
 
   // keep focus on screen
@@ -179,49 +199,40 @@ export class Form {
     this.scrollView.setCursor();
   }
 
-  private getNextFocus(): number {
+  private shiftFocus(direction: number): void {
+    // if it can stay within one component, let it.
+    if (this.focus >= 0 && this.focus < this.fields.length) {
     const component = this.fields[this.focus].component;
-    if (component.shiftFocus && component.shiftFocus(1)) return this.focus;
-    let focus = this.focus + 1;
-    while (focus < this.fields.length && !this.fields[focus].component.acceptsFocus) focus++;
-    return focus < this.fields.length ? focus : this.focus;
+      if (component.shiftFocus && component.shiftFocus(direction)) {
+        this.fields[this.focus].component.draw();
+        this.ensureFocus();
+        return;
   }
+    }
 
-  private getPrevFocus(): number {
-    const component = this.fields[this.focus].component;
-    if (component.shiftFocus && component.shiftFocus(-1)) return this.focus;
-    let focus = this.focus - 1;
-    while (focus >= 0 && !this.fields[focus].component.acceptsFocus) focus++;
-    return focus >= 0 ? focus : this.focus;
+    // bail if nothing accepts focus.
+    if (!this.fields.some(f => f.component.acceptsFocus)) return;
+
+    this.fields[this.focus].component.loseFocus?.(direction);
+    this.fields[this.focus].component.draw();
+
+    this.focus += direction;
+    while (this.focus >= 0 && this.focus < this.fields.length && !this.fields[this.focus].component.acceptsFocus) {
+      this.focus += direction;
   }
+    // if we hit the end, bounce back.
+    if (this.focus < 0 || this.focus >= this.fields.length) return this.shiftFocus(-direction);
 
-  private tellFocus(index: number, take: boolean, direction: number) {
-    const component = this.fields[index].component;
-    if (take && component.takeFocus) component.takeFocus(direction);
-    if (!take && component.loseFocus) component.loseFocus(direction);
+    this.fields[this.focus].component.takeFocus?.(direction);
+    this.fields[this.focus].component.draw();
+    this.ensureFocus();
   }
 
   next() {
-    const oldFocus = this.focus;
-    this.focus = this.getNextFocus();
-    if (oldFocus != this.focus) {
-      this.tellFocus(oldFocus, false, 1);
-      this.tellFocus(this.focus, true, 1);
-      this.fields[oldFocus].component.draw(this.regions[oldFocus], this);
-    }
-    this.fields[this.focus].component.draw(this.regions[this.focus], this);
-    this.ensureFocus();
+    this.shiftFocus(1);
   }
 
   prev() {
-    const oldFocus = this.focus;
-    this.focus = this.getPrevFocus();
-    if (oldFocus != this.focus) {
-      this.tellFocus(oldFocus, false, -1);
-      this.tellFocus(this.focus, true, -1);
-      this.fields[oldFocus].component.draw(this.regions[oldFocus], this);
-    }
-    this.fields[this.focus].component.draw(this.regions[this.focus], this);
-    this.ensureFocus();
+    this.shiftFocus(-1);
   }
 }

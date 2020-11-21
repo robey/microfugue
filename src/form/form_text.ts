@@ -16,6 +16,7 @@ const DEFAULT_TEXT_CONFIG: FormTextConfig = {
 // simplest component: just text
 export class FormText implements FormComponent {
   config: FormTextConfig;
+  region?: Region;
   focused = false;
 
   constructor(public text: RichText, options: Partial<FormTextConfig> = {}) {
@@ -38,12 +39,18 @@ export class FormText implements FormComponent {
     return this.text.wrap(width - 1, this.config.wordWrap).length;
   }
 
-  draw(region: Region) {
-    this.text.wrap(region.cols - 1, this.config.wordWrap).forEach((line, i) => {
-      region.at(0, i).clearToEndOfLine();
-      line.render(region, this.config.colorAliases);
+  attach(region: Region, _form: Form) {
+    this.region = region;
+  }
+
+  draw() {
+    if (!this.region) return;
+    this.text.wrap(this.region.cols - 1, this.config.wordWrap).forEach((line, i) => {
+      if (!this.region) return;
+      this.region.at(0, i).clearToEndOfLine();
+      line.render(this.region, this.config.colorAliases);
     });
     // why would you focus a text line?
-    if (this.focused) region.moveCursor(0, 0);
+    if (this.focused) this.region.moveCursor(0, 0);
   }
 }

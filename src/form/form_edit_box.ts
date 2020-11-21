@@ -65,10 +65,11 @@ export class FormEditBox implements FormComponent {
     return this.height;
   }
 
-  draw(region: Region, form: Form) {
-    if (!this.form) this.form = form;
-    if (!this.editBox) {
+  attach(region: Region, form: Form) {
+    this.form = form;
+
       // constrain the editing part to max len & height
+    if (this.layout) this.layout.detach();
       this.layout = new GridLayout(
         region,
         [ GridLayout.fixed(this.config.maxLength) ],
@@ -87,6 +88,8 @@ export class FormEditBox implements FormComponent {
       });
       if (this.content) this.editBox.insert(this.content);
     }
+
+  draw() {
     this.editBox?.redraw();
   }
 
