@@ -3,6 +3,7 @@ import { lpad } from "./rich_text";
 import { ScrollView, ScrollViewConfig } from "./scroll_view";
 
 export { FormButton, FormButtonConfig } from "./form/form_button";
+import { COLOR_BG, COLOR_FG, COLOR_FG_FOCUS } from "./form/form_colors";
 export { FormEditBox, FormEditBoxConfig } from "./form/form_edit_box";
 export { FormRow, FormRowConfig } from "./form/form_row";
 export { FormText, FormTextConfig } from "./form/form_text";
@@ -31,10 +32,10 @@ export interface FormConfig {
 const DEFAULT_CONFIG: FormConfig = {
   left: GridLayout.fixed(20),
   right: GridLayout.stretch(1),
-  labelColor: "777",
-  labelBackground: "000",
-  labelFocusColor: "ccc",
-  labelFocusBackground: "000",
+  labelColor: COLOR_FG,
+  labelBackground: COLOR_BG,
+  labelFocusColor: COLOR_FG_FOCUS,
+  labelFocusBackground: COLOR_BG,
   labelSpacing: 1,
   scrollViewConfig: { gravityIsTop: true },
   verticalPadding: 1,

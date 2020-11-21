@@ -1,6 +1,7 @@
 import { Constraint, GridLayout, Key, Region } from "antsy";
 import { EditBox } from "../edit_box";
 import { Form, FormComponent } from "../form";
+import { COLOR_COMPONENT, COLOR_COMPONENT_FOCUS, COLOR_FG, COLOR_FG_FOCUS } from "./form_colors";
 
 export interface FormEditBoxConfig {
   color: string;
@@ -15,10 +16,10 @@ export interface FormEditBoxConfig {
 }
 
 const DEFAULT_EDIT_BOX_CONFIG: FormEditBoxConfig = {
-  color: "333",
-  focusColor: "007",
-  textColor: "999",
-  focusTextColor: "fff",
+  color: COLOR_COMPONENT,
+  focusColor: COLOR_COMPONENT_FOCUS,
+  textColor: COLOR_FG,
+  focusTextColor: COLOR_FG_FOCUS,
 
   minWidth: 10,
   maxLength: 255,

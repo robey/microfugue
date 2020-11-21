@@ -1,6 +1,7 @@
 import { Constraint, GridLayout, Key, KeyType, Region } from "antsy";
 import { Form, FormComponent } from "../form";
 import { lpad, RichText } from "../rich_text";
+import { COLOR_COMPONENT, COLOR_COMPONENT_FOCUS, COLOR_FG, COLOR_FG_FOCUS } from "./form_colors";
 
 export interface FormButtonConfig {
   colorAliases?: Map<string, string>;
@@ -20,10 +21,10 @@ export interface FormButtonConfig {
 }
 
 const DEFAULT_TEXT_CONFIG: FormButtonConfig = {
-  color: "333",
-  textColor: "999",
-  focusColor: "007",
-  focusTextColor: "fff",
+  color: COLOR_COMPONENT,
+  textColor: COLOR_FG,
+  focusColor: COLOR_COMPONENT_FOCUS,
+  focusTextColor: COLOR_FG_FOCUS,
   horizontalPadding: 1,
   verticalPadding: 0,
   focusBadgeLeft: "▶",

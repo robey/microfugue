@@ -1,15 +1,18 @@
 import { Constraint, GridLayout, Region } from "antsy";
 import { Form, FormComponent } from "../form";
 import { RichText } from "../rich_text";
+import { COLOR_FG } from "./form_colors";
 
 export interface FormTextConfig {
   colorAliases?: Map<string, string>;
+  defaultColor: string;
   acceptsFocus: boolean;
   wordWrap: boolean;
   constraint: Constraint;
 }
 
 const DEFAULT_TEXT_CONFIG: FormTextConfig = {
+  defaultColor: COLOR_FG,
   acceptsFocus: false,
   wordWrap: true,
   constraint: GridLayout.stretchWithMinimum(1, 10),
@@ -54,7 +57,7 @@ export class FormText implements FormComponent {
     this.text.wrap(this.region.cols - 1, this.config.wordWrap).forEach((line, i) => {
       if (!this.region) return;
       this.region.at(0, i).clearToEndOfLine();
-      line.render(this.region, this.config.colorAliases);
+      line.render(this.region, this.config.colorAliases, this.config.defaultColor);
     });
     // why would you focus a text line?
     if (this.focused) this.region.moveCursor(0, 0);
