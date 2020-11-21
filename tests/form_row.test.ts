@@ -9,7 +9,6 @@ const GRAY = `[38;5;246m`;
 const BLUE_BG = `[44m`;
 const GRAY_BG = `[48;5;236m`;
 const DIM = `[38;5;243m`;
-const LABEL = `[38;5;252m`;
 const FOCUS = WHITE + BLUE_BG;
 const NORMAL = GRAY + GRAY_BG;
 
@@ -32,7 +31,7 @@ describe("FormRow", () => {
     );
 
     escpaint(canvas).should.eql(
-      `${CLEAR}[2;5H${LABEL}Done? ${FOCUS}▶ OK ◀${RESET}  ${NORMAL}  Cancel  [16D`
+      `${CLEAR}[2;5H${WHITE}Done? ${BLUE_BG}▶ OK ◀${RESET}  ${NORMAL}  Cancel  [16D`
     );
     form.next();
     escpaint(canvas).should.eql(
@@ -56,8 +55,8 @@ describe("FormRow", () => {
     );
 
     escpaint(canvas).should.eql(
-      `${CLEAR}[2;4H${LABEL}Error! ` +
-      `${FOCUS}▶ Abort ◀${RESET}  ${NORMAL}  Retry  ${RESET}  ${NORMAL}  Fail  ` +
+      `${CLEAR}[2;4H${WHITE}Error! ` +
+      `${BLUE_BG}▶ Abort ◀${RESET}  ${NORMAL}  Retry  ${RESET}  ${NORMAL}  Fail  ` +
       `[4;11H  Save  [2;13H`
     );
     form.next();
@@ -93,8 +92,8 @@ describe("FormRow", () => {
     );
 
     escpaint(canvas).should.eql(
-      `${CLEAR}[2;4H${LABEL}Error! ` +
-      `${FOCUS}▶ Abort ◀${RESET}  ${NORMAL}  Retry  [4;11H  Fail  [2;13H`
+      `${CLEAR}[2;4H${WHITE}Error! ` +
+      `${BLUE_BG}▶ Abort ◀${RESET}  ${NORMAL}  Retry  [4;11H  Fail  [2;13H`
     );
     form.next();
     escpaint(canvas).should.eql(
@@ -125,8 +124,8 @@ describe("FormRow", () => {
     (row.grid?.tops ?? []).should.eql([ 0, 3, 6 ]);
 
     escpaint(canvas).should.eql(
-      `${CLEAR}[2;5H${LABEL}Lines ` +
-      `[37mword   two    seven[3;18Hword` +
+      `${CLEAR}[2;5H${WHITE}Lines ` +
+      `${GRAY}word[37m   ${GRAY}two [37m   ${GRAY}seven[3;18Hword` +
       `[5;11Hthree[6;11Hword[7;11Hline[2;11H`
     );
   });
@@ -143,8 +142,8 @@ describe("FormRow", () => {
     );
 
     escpaint(canvas).should.eql(
-      `${CLEAR}[2;4H${LABEL}Gripes ` +
-      `${FOCUS}▶ Clear ◀${RESET}  ` +
+      `${CLEAR}[2;4H${WHITE}Gripes ` +
+      `${BLUE_BG}▶ Clear ◀${RESET}  ` +
       `${NORMAL}test content[K[11C${DIM}[40m ` +
       `[3;22H${NORMAL}[K[23C${DIM}[40m ` +
       `[4;22H${NORMAL}[K[23C${DIM}[40m ` +
@@ -153,7 +152,7 @@ describe("FormRow", () => {
 
     form.feed(Key.normal(0, " "));
     escpaint(canvas).should.eql(
-      `[9C${NORMAL}[K[23C${DIM}[40m [33D`
+      `[9C${NORMAL}[K[23C${DIM}[40m [2;13H`
     );
 
     form.feed(new Key(0, KeyType.Tab));

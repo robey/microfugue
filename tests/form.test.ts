@@ -49,9 +49,9 @@ describe("Form", () => {
     );
 
     escpaint(canvas).should.eql(
-      `${CLEAR}${LABEL}  crimson ${BLUE}Blue label that will [37m   ${DIM}█` +
+      `${CLEAR}${WHITE}  crimson ${BLUE}Blue label that will [37m   ${DIM}█` +
       `[2;11H${BLUE}line-wrap[15C${DIM}█` +
-      `[3;4Hcobalt ${RED}Red label that also [37m    ${DIM}│[1;11H`
+      `[3;4H${GRAY}cobalt ${RED}Red label that also [37m    ${DIM}│[1;11H`
     );
   });
 
@@ -126,7 +126,7 @@ describe("Form", () => {
     );
 
     escpaint(canvas).should.eql(
-      `${CLEAR}[2;5H${LABEL}Done? ${FOCUS}▶ OK ◀[4D`
+      `${CLEAR}[2;5H${WHITE}Done? ${BLUE_BG}▶ OK ◀[4D`
     );
 
     form.feed(Key.normal(0, " "));
@@ -145,7 +145,7 @@ describe("Form", () => {
     );
 
     escpaint(canvas).should.eql(
-      `${CLEAR}[2;5H${LABEL}Done? ${FOCUS}▶ OK ◀` +
+      `${CLEAR}[2;5H${WHITE}Done? ${BLUE_BG}▶ OK ◀` +
       `[4;11H${NORMAL}  Cancel  ` +
       `[2;13H`
     );
@@ -176,8 +176,8 @@ describe("Form", () => {
       );
 
       escpaint(canvas).should.eql(
-        `${CLEAR}[2;4H${LABEL}Gripes ` +
-        `${FOCUS}test content[K[22C${DIM}[40m ` +
+        `${CLEAR}[2;4H${WHITE}Gripes ` +
+        `${BLUE_BG}test content[K[22C${DIM}[40m ` +
         `[3;11H${FOCUS}[K[34C${DIM}[40m ` +
         `[4;11H${FOCUS}[K[34C${DIM}[40m ` +
         `[2;23H`
@@ -196,8 +196,8 @@ describe("Form", () => {
 
       escpaint(canvas).should.eql(
         `${CLEAR}[2;11H${FOCUS}▶ OK ◀` +
-        `[4;4H${DIM}[40mGripes ` +
-        `${NORMAL}test content[K[22C${DIM}[40m ` +
+        `[4;4H${GRAY}[40mGripes ` +
+        `${GRAY_BG}test content[K[22C${DIM}[40m ` +
         `[5;11H${NORMAL}[K[34C${DIM}[40m ` +
         `[6;11H${NORMAL}[K[34C${DIM}[40m ` +
         `[2;13H`
@@ -214,8 +214,8 @@ describe("Form", () => {
       );
 
       escpaint(canvas).should.eql(
-        `${CLEAR}[2;4H${LABEL}Gripes ` +
-        `${FOCUS}test      [6D`
+        `${CLEAR}[2;4H${WHITE}Gripes ` +
+        `${BLUE_BG}test      [6D`
       );
     });
 
@@ -230,8 +230,8 @@ describe("Form", () => {
       );
 
       escpaint(canvas).should.eql(
-        `${CLEAR}[2;4H${LABEL}Gripes ` +
-        `${FOCUS}test content[K[22C${DIM}[40m ` +
+        `${CLEAR}[2;4H${WHITE}Gripes ` +
+        `${BLUE_BG}test content[K[22C${DIM}[40m ` +
         `[3;11H${FOCUS}[K[34C${DIM}[40m ` +
         `[4;11H${FOCUS}[K[34C${DIM}[40m ` +
         `[6;11H${NORMAL}  OK  ` +
@@ -262,8 +262,8 @@ describe("Form", () => {
       );
 
       escpaint(canvas).should.eql(
-        `${CLEAR}[2;3H${LABEL}Gripes  ` +
-        `${FOCUS}test content       ` +
+        `${CLEAR}[2;3H${WHITE}Gripes  ` +
+        `${BLUE_BG}test content       ` +
         `[4;11H${NORMAL}  OK  ` +
         `[2;23H`
       );
@@ -272,8 +272,43 @@ describe("Form", () => {
       await delay(10);
 
       escpaint(canvas).should.eql(
-        `${FOCUS} for yo[3;11Hu![K[17C${DIM}[40m [4H${LABEL}[K[5;11H${NORMAL}  OK  [3;13H`
+        `${FOCUS} for yo[3;11Hu![K[17C${DIM}[40m [4H${WHITE}[K[5;11H${NORMAL}  OK  [3;13H`
       );
     });
+  });
+
+  it("complex form", async () => {
+    const canvas = new Canvas(80, 25);
+    canvas.all().color("red", "black").clear();
+    canvas.redraw();
+
+    const text1 = new FormText(RichText.parse("Editing a place..."));
+    const keyBox = new FormEditBox("tavern", { minWidth: 4, maxLength: 16, minHeight: 1, maxHeight: 1 });
+    const titleBox = new FormEditBox("Red Stag Tavern", { minWidth: 10, maxLength: 40, minHeight: 1, maxHeight: 1 });
+    const descBox = new FormEditBox(
+      "A rustic boardwalk begins here and continues to the east, with views of the southern endcap lake. A large building with few windows, made of weathered planks, lies to the north. A small sign swings from a pole next to the entrance. To the west, a stony path continues along the lake shore.",
+      { minHeight: 3, maxLength: 4096 }
+    );
+    const form = new Form(
+      canvas.all(),
+      [
+        { component: text1, fullWidth: true },
+        { component: keyBox, label: "Key:" },
+        { component: titleBox, label: "Title:" },
+        { component: descBox, label: "Description:" }
+      ],
+      {}
+    );
+
+    form.next();
+    form.next();
+
+    // wait for the descBox to resize to fit
+    await delay(10);
+    escpaint(canvas).should.eql(
+      ""
+    );
+
+    // console.log(canvas.paint() + "@\n\n\n\n\n\n\n\n");
   });
 });

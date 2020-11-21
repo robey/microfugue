@@ -136,7 +136,7 @@ describe("EditBox", () => {
     box.feed(new Key(Modifier.Control, KeyType.Right));
     escpaint(canvas).should.eql(`[5D`);
     box.feed(Key.normal(0, "h"));
-    escpaint(canvas).should.eql(`h some qwords[12D`);
+    escpaint(canvas).should.eql(`h some qwords[2;9H`);
     box.feed(RETURN);
     escpaint(canvas).should.eql(`[8D[K`);
     (await asyncIter(box.events).take(1).collect()).should.eql([ "this ish some qwords" ]);
@@ -243,17 +243,17 @@ describe("EditBox", () => {
     escpaint(canvas).should.eql("u");
 
     box.feed(Key.normal(Modifier.Control, "A"));
-    escpaint(canvas).should.eql("[11D0123456789abcdefghi[38;5;243m…[20D");
+    escpaint(canvas).should.eql("[11D0123456789abcdefghi[38;5;243m…[2H");
     box.feed(Key.normal(Modifier.Control, "E"));
     escpaint(canvas).should.eql("…[38;5;15mlmnopqrstu[K");
     for (let i = 0; i < 11; i++) box.feed(new Key(0, KeyType.Left));
-    escpaint(canvas).should.eql("[10Dbcdefghijklmnopqrs[38;5;243m…[10D");
+    escpaint(canvas).should.eql("[10Dbcdefghijklmnopqrs[38;5;243m…[2;11H");
 
     box.feed(Key.normal(Modifier.Control, "E"));
     box.feed(new Key(Modifier.Control, KeyType.Up));
     escpaint(canvas).should.eql("[9D[38;5;15mlmnopqrstu[K[10D");
     box.feed(new Key(Modifier.Control, KeyType.Up));
-    escpaint(canvas).should.eql("bcdefghijklmnopqrs[38;5;243m…[19D");
+    escpaint(canvas).should.eql("bcdefghijklmnopqrs[38;5;243m…[2;2H");
     box.feed(new Key(Modifier.Control, KeyType.Down));
     escpaint(canvas).should.eql("[10C");
   });
