@@ -1,4 +1,4 @@
-import { GridLayout, Key, Region } from "antsy";
+import { Constraint, GridLayout, Key, Region } from "antsy";
 import { EditBox } from "../edit_box";
 import { Form, FormComponent } from "../form";
 
@@ -8,6 +8,7 @@ export interface FormEditBoxConfig {
   textColor: string;
   focusTextColor: string;
 
+  minWidth: number;
   maxLength: number;
   minHeight: number;
   maxHeight: number;
@@ -19,6 +20,7 @@ const DEFAULT_EDIT_BOX_CONFIG: FormEditBoxConfig = {
   textColor: "999",
   focusTextColor: "fff",
 
+  minWidth: 10,
   maxLength: 255,
   minHeight: 1,
   maxHeight: 5,
@@ -28,6 +30,7 @@ const DEFAULT_EDIT_BOX_CONFIG: FormEditBoxConfig = {
 export class FormEditBox implements FormComponent {
   acceptsFocus = true;
   config: FormEditBoxConfig;
+  constraint: Constraint;
   focused = false;
   form?: Form;
   layout?: GridLayout;
@@ -37,6 +40,7 @@ export class FormEditBox implements FormComponent {
   constructor(public content: string, options: Partial<FormEditBoxConfig> = {}) {
     this.config = Object.assign({}, DEFAULT_EDIT_BOX_CONFIG, options);
     this.height = this.config.minHeight;
+    this.constraint = GridLayout.stretchWithMinMax(1, this.config.minWidth, this.config.maxLength);
   }
 
   takeFocus(_direction: number) {
@@ -68,26 +72,26 @@ export class FormEditBox implements FormComponent {
   attach(region: Region, form: Form) {
     this.form = form;
 
-      // constrain the editing part to max len & height
+    // constrain the editing part to max len & height
     if (this.layout) this.layout.detach();
-      this.layout = new GridLayout(
-        region,
-        [ GridLayout.fixed(this.config.maxLength) ],
-        [ GridLayout.fixed(this.height) ]
-      );
+    this.layout = new GridLayout(
+      region,
+      [ GridLayout.fixed(this.config.maxLength) ],
+      [ GridLayout.fixed(this.height) ]
+    );
 
-      this.editBox = new EditBox(this.layout.layoutAt(0, 0), {
-        color: this.focused ? this.config.focusTextColor : this.config.textColor,
-        backgroundColor: this.focused ? this.config.focusColor : this.config.color,
-        maxLength: this.config.maxLength,
-        allowScroll: true,
-        heightChangeRequest: (lines: number) => this.resizeHeight(lines),
-        useHistory: false,
-        commitOnEnter: false,
-        alwaysFocused: this.focused,
-      });
-      if (this.content) this.editBox.insert(this.content);
-    }
+    this.editBox = new EditBox(this.layout.layoutAt(0, 0), {
+      color: this.focused ? this.config.focusTextColor : this.config.textColor,
+      backgroundColor: this.focused ? this.config.focusColor : this.config.color,
+      maxLength: this.config.maxLength,
+      allowScroll: true,
+      heightChangeRequest: (lines: number) => this.resizeHeight(lines),
+      useHistory: false,
+      commitOnEnter: false,
+      alwaysFocused: this.focused,
+    });
+    if (this.content) this.editBox.insert(this.content);
+  }
 
   draw() {
     this.editBox?.redraw();

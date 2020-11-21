@@ -1,16 +1,18 @@
-import { Region } from "antsy";
-import { FormComponent } from "../form";
+import { Constraint, GridLayout, Region } from "antsy";
+import { Form, FormComponent } from "../form";
 import { RichText } from "../rich_text";
 
 export interface FormTextConfig {
   colorAliases?: Map<string, string>;
   acceptsFocus: boolean;
   wordWrap: boolean;
+  constraint: Constraint;
 }
 
 const DEFAULT_TEXT_CONFIG: FormTextConfig = {
   acceptsFocus: false,
   wordWrap: true,
+  constraint: GridLayout.stretchWithMinimum(1, 10),
 };
 
 // simplest component: just text
@@ -33,6 +35,10 @@ export class FormText implements FormComponent {
 
   loseFocus(_direction: number) {
     this.focused = false;
+  }
+
+  get constraint(): Constraint {
+    return this.config.constraint;
   }
 
   computeHeight(width: number): number {
