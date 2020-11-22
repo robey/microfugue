@@ -50,7 +50,7 @@ export class FormEditBox implements FormComponent {
       this.editBox.reconfigure({
         color: this.config.focusTextColor,
         backgroundColor: this.config.focusColor,
-        alwaysFocused: true,
+        focused: true,
       });
     }
   }
@@ -61,7 +61,7 @@ export class FormEditBox implements FormComponent {
       this.editBox.reconfigure({
         color: this.config.textColor,
         backgroundColor: this.config.color,
-        alwaysFocused: false,
+        focused: false,
       });
     }
   }
@@ -89,7 +89,7 @@ export class FormEditBox implements FormComponent {
       heightChangeRequest: (lines: number) => this.resizeHeight(lines),
       useHistory: false,
       commitOnEnter: false,
-      alwaysFocused: this.focused,
+      focused: this.focused,
     });
     if (this.content) this.editBox.insert(this.content);
   }

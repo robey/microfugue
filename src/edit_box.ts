@@ -32,8 +32,9 @@ export interface EditBoxConfig {
   // generate a text event on "enter"? if not, this is a "passive" edit box.
   commitOnEnter: boolean;
 
-  // own the cursor?
-  alwaysFocused: boolean;
+  // own the cursor? (if true, we move the canvas's cursor to the edit
+  // position. if false, we're viewing, not editing.)
+  focused: boolean;
 }
 
 const DEFAULT_CONFIG: EditBoxConfig = {
@@ -46,7 +47,7 @@ const DEFAULT_CONFIG: EditBoxConfig = {
   allowScroll: false,
   useHistory: true,
   commitOnEnter: true,
-  alwaysFocused: true,
+  focused: true,
 };
 
 export class EditBox {
@@ -116,7 +117,7 @@ export class EditBox {
     this.visiblePos = 0;
     this.historyIndex = this.history.length;
     this.saved = "";
-    if (this.config.alwaysFocused) this.moveCursor();
+    if (this.config.focused) this.moveCursor();
     this.setIdealHeight(1);
   }
 
@@ -132,7 +133,7 @@ export class EditBox {
   }
 
   redraw() {
-    if (this.config.alwaysFocused && this.moveCursor()) return;
+    if (this.config.focused && this.moveCursor()) return;
     this._redraw();
   }
 
@@ -152,6 +153,7 @@ export class EditBox {
     }
   }
 
+  // move the canvas cursor to `pos`, possibly shifting the part of the text that's visible.
   // returns true if it had to trigger a redraw.
   moveCursor(pos: number = this.pos): boolean {
     const oldVisiblePos = this.visiblePos;
