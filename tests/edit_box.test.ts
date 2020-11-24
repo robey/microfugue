@@ -2,14 +2,18 @@ import "should";
 import { Canvas, Key, Modifier, KeyType } from "antsy";
 import { asyncIter } from "ballvalve";
 import { EditBox } from "..";
+import { EditBoxConfig } from "../lib/edit_box";
 
-const CLEAR = `[38;5;15m`;
+const WHITE = `[38;5;15m`;
 const DIM = `[38;5;243m`;
 
 const BS = new Key(0, KeyType.Backspace);
 const RETURN = new Key(0, KeyType.Return);
 
 const escpaint = (c: Canvas): string => c.paint().replace(/\u001b\[/g, "[");
+
+const delay = (msec: number) => new Promise(resolve => setTimeout(resolve, msec));
+
 
 describe("EditBox", () => {
   const canvas = new Canvas(20, 3);
@@ -25,7 +29,7 @@ describe("EditBox", () => {
 
   it("enter letters and backspace", async () => {
     for (const ch of "boskoe") box.feed(Key.normal(0, ch));
-    escpaint(canvas).should.eql(`${CLEAR}boskoe`);
+    escpaint(canvas).should.eql(`${WHITE}boskoe`);
     box.feed(BS);
     box.feed(BS);
     box.feed(BS);
@@ -39,7 +43,7 @@ describe("EditBox", () => {
 
   it("left/right and delete", async () => {
     for (const ch of "boshcoe") box.feed(Key.normal(0, ch));
-    escpaint(canvas).should.eql(`${CLEAR}boshcoe`);
+    escpaint(canvas).should.eql(`${WHITE}boshcoe`);
     box.feed(new Key(0, KeyType.Left));
     box.feed(new Key(0, KeyType.Left));
     box.feed(new Key(0, KeyType.Left));
@@ -59,7 +63,7 @@ describe("EditBox", () => {
 
   it("home/end", async () => {
     for (const ch of "sc") box.feed(Key.normal(0, ch));
-    escpaint(canvas).should.eql(`${CLEAR}sc`);
+    escpaint(canvas).should.eql(`${WHITE}sc`);
     box.feed(new Key(0, KeyType.Home));
     box.feed(Key.normal(0, "o"));
     escpaint(canvas).should.eql("[2Dosc[2D");
@@ -79,7 +83,7 @@ describe("EditBox", () => {
 
   it("C-k", async () => {
     for (const ch of "boshcoe") box.feed(Key.normal(0, ch));
-    escpaint(canvas).should.eql(`${CLEAR}boshcoe`);
+    escpaint(canvas).should.eql(`${WHITE}boshcoe`);
     box.feed(new Key(0, KeyType.Home));
     box.feed(new Key(0, KeyType.Right));
     box.feed(new Key(0, KeyType.Right));
@@ -95,7 +99,7 @@ describe("EditBox", () => {
 
   it("C-t", async () => {
     for (const ch of "bocsoe") box.feed(Key.normal(0, ch));
-    escpaint(canvas).should.eql(`${CLEAR}bocsoe`);
+    escpaint(canvas).should.eql(`${WHITE}bocsoe`);
     box.feed(new Key(0, KeyType.Left));
     box.feed(new Key(0, KeyType.Left));
     box.feed(new Key(0, KeyType.Left));
@@ -108,7 +112,7 @@ describe("EditBox", () => {
 
   it("C-w", async () => {
     for (const ch of "this is some words") box.feed(Key.normal(0, ch));
-    escpaint(canvas).should.eql(`${CLEAR}this is some words`);
+    escpaint(canvas).should.eql(`${WHITE}this is some words`);
     box.feed(Key.normal(Modifier.Control, "W"));
     escpaint(canvas).should.eql(`[6D[K[C`);
     box.feed(Key.normal(Modifier.Control, "W"));
@@ -122,7 +126,7 @@ describe("EditBox", () => {
 
   it("left/right word", async () => {
     for (const ch of "this is some words") box.feed(Key.normal(0, ch));
-    escpaint(canvas).should.eql(`${CLEAR}this is some words`);
+    escpaint(canvas).should.eql(`${WHITE}this is some words`);
     box.feed(new Key(Modifier.Control, KeyType.Left));
     escpaint(canvas).should.eql(`[5D`);
     box.feed(Key.normal(0, "q"));
@@ -229,13 +233,13 @@ describe("EditBox", () => {
     const canvas = new Canvas(20, 3);
     const region = canvas.clip(0, 1, 20, 2);
     const box = new EditBox(region, { color: "white", allowScroll: true });
-    for (const ch of "0123456789abcdefgh") box.feed(Key.normal(0, ch));
-    escpaint(canvas).should.eql("[37m[40m[2J[H[B[38;5;15m0123456789abcdefgh");
+    for (const ch of "0123456789abcdefghi") box.feed(Key.normal(0, ch));
+    escpaint(canvas).should.eql("[37m[40m[2J[H[B[38;5;15m0123456789abcdefghi");
 
-    box.feed(Key.normal(0, "i"));
-    escpaint(canvas).should.eql("[18D[38;5;243m…[38;5;15mbcdefghi[K");
-    for (const ch of "jklm") box.feed(Key.normal(0, ch));
-    escpaint(canvas).should.eql("jklm");
+    box.feed(Key.normal(0, "j"));
+    escpaint(canvas).should.eql("[19D[38;5;243m…[38;5;15mbcdefghij[K");
+    for (const ch of "klm") box.feed(Key.normal(0, ch));
+    escpaint(canvas).should.eql("klm");
 
     for (const ch of "nopqrst") box.feed(Key.normal(0, ch));
     escpaint(canvas).should.eql("[12Dlmnopqrst   [3D");
@@ -262,13 +266,13 @@ describe("EditBox", () => {
     const canvas = new Canvas(20, 3);
     const region = canvas.clip(0, 1, 10, 3);
     const box = new EditBox(region, { color: "white", allowScroll: true });
-    for (const ch of "0123456789abcdefgh") box.feed(Key.normal(0, ch));
-    escpaint(canvas).should.eql("[37m[40m[2J[H[B[38;5;15m0123456789[3Habcdefgh");
+    for (const ch of "0123456789abcdefghi") box.feed(Key.normal(0, ch));
+    escpaint(canvas).should.eql("[37m[40m[2J[H[B[38;5;15m0123456789[3Habcdefghi");
 
-    box.feed(Key.normal(0, "i"));
-    escpaint(canvas).should.eql("[2H[38;5;243m…[38;5;15mbcdefghi [3H[K[2;10H");
-    for (const ch of "jklm") box.feed(Key.normal(0, ch));
-    escpaint(canvas).should.eql("j[3Hklm");
+    box.feed(Key.normal(0, "j"));
+    escpaint(canvas).should.eql("[2H[38;5;243m…[38;5;15mbcdefghij[3H[K");
+    for (const ch of "klm") box.feed(Key.normal(0, ch));
+    escpaint(canvas).should.eql("klm");
 
     for (const ch of "nopqrst") box.feed(Key.normal(0, ch));
     escpaint(canvas).should.eql("[2;2Hlmnopqrst[3H   [3D");
@@ -294,7 +298,7 @@ describe("EditBox", () => {
   it("no history", async () => {
     const canvas = new Canvas(20, 3);
     const region = canvas.clip(0, 1, 10, 3);
-    const box = new EditBox(region, { color: "white", allowScroll: true, useHistory: false, commitOnEnter: false });
+    const box = new EditBox(region, { color: "white", allowScroll: true, useHistory: false, enterAction: "ignore" });
     box.history.should.eql([]);
     for (const ch of "0123456789abcdefgh") box.feed(Key.normal(0, ch));
     escpaint(canvas).should.eql("[37m[40m[2J[H[B[38;5;15m0123456789[3Habcdefgh");
@@ -311,8 +315,6 @@ describe("EditBox", () => {
   });
 
   it("setIdealHeight", async () => {
-    const delay = (msec: number) => new Promise(resolve => setTimeout(resolve, msec));
-
     const canvas = new Canvas(20, 3);
     const region = canvas.clip(0, 0, 10, 1);
     const requests: number[] = [];
@@ -341,13 +343,45 @@ describe("EditBox", () => {
     escpaint(canvas).should.eql(`[H[K[B[K[B   [H`);
   });
 
+  describe("word wrap", () => {
+    const commonOptions: Partial<EditBoxConfig> = {
+      color: "white", enterAction: "insert", wordWrap: true, visibleLinefeed: "@"
+    };
+
+    it("basic", () => {
+      const canvas = new Canvas(20, 3);
+      const box = new EditBox(canvas.all(), commonOptions);
+      for (const ch of "this house is incredible") box.feed(Key.normal(0, ch));
+      escpaint(canvas).should.eql(`${WHITE}[40m[2J[Hthis house is[2Hincredible`);
+
+      box.feed(new Key(0, KeyType.Backspace));
+      box.feed(new Key(0, KeyType.Backspace));
+      box.feed(new Key(0, KeyType.Backspace));
+      box.feed(new Key(0, KeyType.Backspace));
+      escpaint(canvas).should.eql("[2J[Hthis house is[2Hincred");
+
+      box.feed(new Key(0, KeyType.Backspace));
+      escpaint(canvas).should.eql("[2J[Hthis house is incre");
+    });
+
+    it("visible linefeed", () => {
+      const canvas = new Canvas(20, 3);
+      const box = new EditBox(canvas.all(), commonOptions);
+      for (const ch of "my chair!\n") box.feed(Key.normal(0, ch));
+      escpaint(canvas).should.eql(`${WHITE}[40m[2J[Hmy chair!${DIM}@`);
+
+      for (const ch of "huh?") box.feed(Key.normal(0, ch));
+      escpaint(canvas).should.eql(`${WHITE}[2J[Hmy chair!${DIM}@[2H${WHITE}huh?`);
+    });
+  });
+
   describe("suggestions", () => {
     it("rotate", async () => {
       box.autoComplete = () => [ "a", "b", "c" ];
       for (const ch of "hello") box.feed(Key.normal(0, ch));
 
       box.feed(new Key(0, KeyType.Tab));
-      escpaint(canvas).should.eql(`${CLEAR}hello${DIM}a[D`);
+      escpaint(canvas).should.eql(`${WHITE}hello${DIM}a[D`);
       box.feed(new Key(0, KeyType.Tab));
       escpaint(canvas).should.eql(`b[D`);
       box.feed(new Key(0, KeyType.Tab));
@@ -368,7 +402,7 @@ describe("EditBox", () => {
       for (const ch of "mea") box.feed(Key.normal(0, ch));
 
       box.feed(new Key(0, KeyType.Tab));
-      escpaint(canvas).should.eql(`${CLEAR}meas${DIM}ure[3D`);
+      escpaint(canvas).should.eql(`${WHITE}meas${DIM}ure[3D`);
       box.feed(new Key(0, KeyType.Tab));
       escpaint(canvas).should.eql(`les[3D`);
       box.feed(new Key(0, KeyType.Tab));
@@ -380,7 +414,7 @@ describe("EditBox", () => {
       for (const ch of "hope") box.feed(Key.normal(0, ch));
 
       box.feed(new Key(0, KeyType.Tab));
-      escpaint(canvas).should.eql(`${CLEAR}hopeless`);
+      escpaint(canvas).should.eql(`${WHITE}hopeless`);
     });
 
     it("nothing", async () => {
@@ -396,11 +430,11 @@ describe("EditBox", () => {
       for (const ch of "mea") box.feed(Key.normal(0, ch));
 
       box.feed(new Key(0, KeyType.Tab));
-      escpaint(canvas).should.eql(`${CLEAR}mea${DIM}sure[4D`);
+      escpaint(canvas).should.eql(`${WHITE}mea${DIM}sure[4D`);
       box.autoComplete = () => [ " time" ];
 
       box.feed(new Key(0, KeyType.Tab));
-      escpaint(canvas).should.eql(`ch${CLEAR}  [4D`);
+      escpaint(canvas).should.eql(`ch${WHITE}  [4D`);
       box.feed(Key.normal(0, "l"));
       escpaint(canvas).should.eql(`l [D`);
       box.feed(new Key(0, KeyType.Tab));

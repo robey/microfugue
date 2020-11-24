@@ -1,7 +1,11 @@
 import { Key, KeyParser, Region, KeyType, Modifier } from "antsy";
 import { PushAsyncIterator } from "ballvalve";
+import { RichText } from "./rich_text";
 
 const ELLIPSIS = "\u2026";
+
+// FIXME: placeholder
+const VISIBLE_CR = "@";
 
 export interface EditBoxConfig {
   // colors for the actual text being edited
@@ -29,8 +33,15 @@ export interface EditBoxConfig {
   // keep history and navigate it with arrow keys?
   useHistory: boolean;
 
-  // generate a text event on "enter"? if not, this is a "passive" edit box.
-  commitOnEnter: boolean;
+  // when the user hits "enter", should we ignore it ("passive" edit), insert
+  // a literal linefeed, or commit the line?
+  enterAction: "ignore" | "insert" | "commit";
+
+  // word wrap multi-line edits?
+  wordWrap: boolean;
+
+  // draw a visible linefeed when inserting them?
+  visibleLinefeed?: string;
 
   // own the cursor? (if true, we move the canvas's cursor to the edit
   // position. if false, we're viewing, not editing.)
@@ -46,7 +57,9 @@ const DEFAULT_CONFIG: EditBoxConfig = {
   history: [],
   allowScroll: false,
   useHistory: true,
-  commitOnEnter: true,
+  enterAction: "commit",
+  wordWrap: false,
+  visibleLinefeed: VISIBLE_CR,
   focused: true,
 };
 
@@ -134,44 +147,84 @@ export class EditBox {
 
   redraw() {
     if (this.config.focused && this.moveCursor()) return;
-    this._redraw();
+    this._redraw(this.lines());
   }
 
-  private _redraw() {
-    this.setIdealHeight(Math.ceil((this.line.length + 2) / this.region.cols));
+  private _redraw(lines: RichText[]) {
+    // in case of rendering bug, bail.
+    if (this.region.rows < 1) return;
 
-    const regionSize = this.region.rows * this.region.cols;
-    let displayText = this.line.slice(this.visiblePos, this.visiblePos + regionSize);
-    const offset = this.visiblePos > 0 ? 1 : 0;
-    const rOffset = this.visiblePos + regionSize < this.line.length ? -1 : undefined;
-    this.region.color(this.config.color, this.config.backgroundColor).clear().at(0, 0);
-    if (offset != 0) this.region.color(this.config.suggestionColor).write(ELLIPSIS);
-    this.region.color(this.config.color).write(displayText.slice(offset, rOffset));
-    if (rOffset !== undefined) this.region.color(this.config.suggestionColor).write(ELLIPSIS);
-    if (this.suggestions && this.suggestionIndex !== undefined) {
-      this.region.color(this.config.suggestionColor).write(this.suggestions[this.suggestionIndex]);
+    const [ vx, vy ] = this.positionToCursor(lines, this.visiblePos);
+    const displayLines = lines.slice(vy, vy + this.region.rows);
+    const bottom = displayLines.length - 1;
+    if (lines.length == 1 && this.visiblePos > 0 && this.config.heightChangeRequest) {
+      // some edit boxes are restricted to one line. deal with that by
+      // scrolling horizontally, but ask for more. if we get more, we'll do
+      // proper word wrapping on the next go round.
+      this.setIdealHeight(2);
+    } else {
+      this.setIdealHeight(lines.length);
     }
+
+    // the visible position will be in mid-line if we only have one display line to work with
+    if (vx > 0) displayLines[0] = displayLines[0].slice(vx);
+
+    // put in ellipsis at the start or end if there's more text than we can display
+    const ellipsis = RichText.string(this.config.suggestionColor, ELLIPSIS);
+    if (this.visiblePos > 0) displayLines[0] = ellipsis.append(displayLines[0].slice(1));
+    if (vy + this.region.rows < lines.length || (bottom >= 0 && displayLines[bottom].length >= this.region.cols)) {
+      displayLines[bottom] = displayLines[bottom].slice(0, this.region.cols - 1).append(ellipsis);
+    }
+
+    this.region.color(this.config.color, this.config.backgroundColor).clear();
+    displayLines.forEach((line, y) => line.render(this.region.at(0, y), undefined, this.config.color));
   }
 
   // move the canvas cursor to `pos`, possibly shifting the part of the text that's visible.
   // returns true if it had to trigger a redraw.
   moveCursor(pos: number = this.pos): boolean {
-    const oldVisiblePos = this.visiblePos;
-    const regionSize = this.region.rows * this.region.cols;
-    const needSize = this.line.length + this.suggestionLength();
-    // scroll a one-line edit box by a half line at a time:
-    const roundFactor = this.region.rows == 1 ? Math.floor(this.region.cols / 2) : this.region.cols;
-    // fix in case a resize has made our offset weird:
-    this.visiblePos = Math.floor(this.visiblePos / roundFactor) * roundFactor;
+    return this._moveCursor(pos, this.lines());
+  }
 
-    if (regionSize > needSize) this.visiblePos = 0;
-    while (pos <= this.visiblePos && this.visiblePos > 0) this.visiblePos -= roundFactor;
-    while (pos >= this.visiblePos + regionSize - 1 && this.config.allowScroll) this.visiblePos += roundFactor;
-    if (this.visiblePos != oldVisiblePos) this._redraw();
+  _moveCursor(pos: number, lines: RichText[]): boolean {
+    const oldVisiblePos = this.visiblePos;
+
+    if (this.config.allowScroll) {
+      if (this.region.rows == 1) {
+        // scroll around horizontally by half a line at a time
+        const stride = Math.floor(this.region.cols / 2);
+        // fix in case a resize has made our offset weird:
+        this.visiblePos = Math.floor(this.visiblePos / stride) * stride;
+        while (pos <= this.visiblePos && this.visiblePos > 0) this.visiblePos -= stride;
+        while (pos >= this.visiblePos + this.region.cols) this.visiblePos += stride;
+      } else {
+        // ensure we're moving one line at a time
+        let [ vx, vy ] = this.positionToCursor(lines, this.visiblePos);
+        if (vx > 0) {
+          this.visiblePos -= vx;
+          vx = 0;
+        }
+
+        while (pos <= this.visiblePos && this.visiblePos > 0) {
+          vy--;
+          this.visiblePos -= lines[vy].length;
+        }
+        let visible = lines.slice(vy, vy + this.region.rows).map(line => line.length).reduce((a, b) => a + b, 0);
+        while (pos > this.visiblePos + visible - 1 && vy < lines.length - this.region.rows) {
+          this.visiblePos += lines[vy].length;
+          visible -= lines[vy].length;
+          if (vy + this.region.rows < lines.length) visible += lines[vy + this.region.rows].length;
+          vy++;
+        }
+      }
+
+      if (this.visiblePos != oldVisiblePos) this._redraw(lines);
+    }
 
     this.pos = pos;
-    const rPos = pos - this.visiblePos;
-    this.region.moveCursor(rPos % this.region.cols, Math.floor(rPos / this.region.cols));
+    const [ vx, vy ] = this.positionToCursor(lines, this.visiblePos);
+    const [ px, py ] = this.positionToCursor(lines, pos);
+    this.region.moveCursor(px - vx, py - vy);
     return this.visiblePos != oldVisiblePos;
   }
 
@@ -181,6 +234,47 @@ export class EditBox {
       for await (const data of s) this.keyParser.feed(data.toString("utf-8"));
     });
     return this.events;
+  }
+
+  // break up our text into lines that will each fit one line of our box.
+  // include linefeeds and any active suggestion.
+  private lines(): RichText[] {
+    // first, any real "\n". put a visible CR in them if desired.
+    let lines = this.line.split("\n").map(s => RichText.string(this.config.color, s));
+
+    if (this.config.visibleLinefeed) {
+      const lf = RichText.string(this.config.suggestionColor, this.config.visibleLinefeed);
+      for (let y = 0; y < lines.length - 1; y++) lines[y] = lines[y].append(lf);
+    }
+    if (this.suggestions && this.suggestionIndex !== undefined) {
+      const add = RichText.string(this.config.suggestionColor, this.suggestions[this.suggestionIndex]);
+      lines[lines.length - 1] = lines[lines.length - 1].append(add);
+    }
+
+    // only wrap if we have more than one line to edit in
+    if (this.region.rows > 1) {
+      const width = this.config.wordWrap ? this.region.cols - 1 : this.region.cols;
+      lines = lines.map(line => line.wrap(width, this.config.wordWrap)).flat();
+      // make sure there's extra space if the cursor would be off-screen
+      if (lines[lines.length - 1].length == this.region.cols) lines.push(RichText.string(this.config.color, ""));
+    }
+    return lines;
+  }
+
+  // return [x, y] of where the position would be in the line
+  private positionToCursor(lines: RichText[], pos: number = this.pos): [ number, number ] {
+    let y = 0;
+    while (y < lines.length && lines[y].length < pos) {
+      pos -= lines[y].length;
+      y++;
+    }
+    // past the end? ... shouldn't really happen but whatever.
+    if (y >= lines.length) return [ lines[lines.length - 1].length, lines.length - 1 ];
+    if (pos == this.region.cols && y < lines.length - 1) {
+      y++;
+      pos = 0;
+    }
+    return [ pos, y ];
   }
 
   private setIdealHeight(lines: number) {
@@ -338,7 +432,9 @@ export class EditBox {
   }
 
   enter() {
-    if (!this.config.commitOnEnter) return;
+    if (this.config.enterAction == "ignore") return;
+    if (this.config.enterAction == "insert") return this.insert("\n");
+
     if (this.line.length > 0 && this.config.useHistory) this.recordHistory(this.line);
     const line = this.line;
     this.reset();

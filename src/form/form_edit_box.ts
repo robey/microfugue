@@ -13,6 +13,10 @@ export interface FormEditBoxConfig {
   maxLength: number;
   minHeight: number;
   maxHeight: number;
+
+  enterAction: "ignore" | "commit" | "insert";
+  wordWrap: boolean;
+  visibleLinefeed?: string;
 }
 
 const DEFAULT_EDIT_BOX_CONFIG: FormEditBoxConfig = {
@@ -25,6 +29,9 @@ const DEFAULT_EDIT_BOX_CONFIG: FormEditBoxConfig = {
   maxLength: 255,
   minHeight: 1,
   maxHeight: 5,
+
+  enterAction: "ignore",
+  wordWrap: false,
 };
 
 // simplest component: just text
@@ -88,7 +95,9 @@ export class FormEditBox implements FormComponent {
       allowScroll: true,
       heightChangeRequest: (lines: number) => this.resizeHeight(lines),
       useHistory: false,
-      commitOnEnter: false,
+      enterAction: this.config.enterAction,
+      wordWrap: this.config.wordWrap,
+      visibleLinefeed: this.config.visibleLinefeed,
       focused: this.focused,
     });
     if (this.content) this.editBox.insert(this.content);
