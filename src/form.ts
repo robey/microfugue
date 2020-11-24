@@ -103,7 +103,7 @@ export class Form {
     this.config.scrollViewConfig = Object.assign({}, DEFAULT_CONFIG.scrollViewConfig, options.scrollViewConfig);
     this.scrollView = new ScrollView(region, this.config.scrollViewConfig);
     this.canvas = this.scrollView.content;
-    this.canvas.resize(this.canvas.cols, this.fields.length);
+    this.canvas.resize(this.canvas.cols, this.fields.length + 1);
 
     // find first focus-able component and give it focus.
     // if none are focus-able, force the first component to be "it".
