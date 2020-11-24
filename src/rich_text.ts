@@ -2,6 +2,11 @@ import { Region } from "antsy";
 
 type Span = RichText | string;
 
+/*
+ * A string where different segments have different (foreground) colors.
+ * A RichText is immutable, and renders onto a single line of a region.
+ * Long ones can be wrapped into a `RichText[]`.
+ */
 export class RichText {
   constructor(public color: string, public spans: Span[]) {
     // pass
@@ -112,12 +117,14 @@ export class RichText {
 
   // returns [ span index, offset within span ]
   private findIndex(n: number): [ number, number ] {
+    if (n < 0) n += this.length;
     let sum = 0;
     for (let i = 0; i < this.spans.length; i++) {
       const len = this.spans[i].length;
       if (n < sum + len) return [ i, n - sum ];
       sum += len;
     }
+    if (n == sum) return [ this.spans.length - 1, this.spans[this.spans.length - 1].length ];
     // past end of string
     return [ -1, -1 ];
   }
@@ -126,7 +133,12 @@ export class RichText {
     const [ index, offset ] = this.findIndex(n);
     if (index == -1) return "";
     const r = this.spans[index];
+    if (offset >= r.length) return "";
     return (typeof r === "string") ? r[offset] : r.at(offset);
+  }
+
+  append(r: RichText): RichText {
+    return new RichText(this.color, [...this.spans, r]);
   }
 
   split(n: number): [ RichText, RichText ] {
@@ -142,9 +154,24 @@ export class RichText {
     return [ new RichText(this.color, rLeft), new RichText(this.color, rRight) ];
   }
 
+  slice(start: number, end: number = this.length): RichText {
+    const [ startIndex, startOffset ] = this.findIndex(start);
+    const [ endIndex, endOffset ] = this.findIndex(end);
+    if (startIndex == -1 || endIndex == -1) return RichText.string(this.color, "");
+    const spans: Span[] = [];
+    if (startIndex == endIndex) {
+      spans.push(this.spans[startIndex].slice(startOffset, endOffset));
+    } else {
+      spans.push(this.spans[startIndex].slice(startOffset));
+      spans.push(...this.spans.slice(startIndex + 1, endIndex));
+      spans.push(this.spans[endIndex].slice(0, endOffset));
+    }
+    return new RichText(this.color, spans);
+  }
+
   findWordWrap(width: number): number | undefined {
     let [ index, offset ] = this.findIndex(width);
-    if (index < 0) return width;
+    if (index < 0 || offset == this.spans[index].length) return width;
     // our candidate position, overall, so far:
     let n = width;
 

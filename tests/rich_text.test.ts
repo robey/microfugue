@@ -6,6 +6,7 @@ import "source-map-support/register";
 describe("RichText", () => {
   it("flat", () => {
     const flat = RichText.string("777", "days of abandon");
+    flat.length.should.eql(15);
 
     flat.at(0).should.eql("d");
     flat.at(3).should.eql("s");
@@ -18,10 +19,15 @@ describe("RichText", () => {
     flat.split(6).map(x => x.toString()).should.eql([ "{777:days o}", "{777:f abandon}" ]);
     flat.split(13).map(x => x.toString()).should.eql([ "{777:days of aband}", "{777:on}" ]);
     flat.split(15).map(x => x.toString()).should.eql([ "{777:days of abandon}", "{777:}" ]);
+
+    flat.slice(0, 3).toString().should.eql("{777:day}");
+    flat.slice(3, 13).toString().should.eql("{777:s of aband}");
+    flat.slice(11).toString().should.eql("{777:ndon}");
   });
 
   it("multi-string", () => {
     const r = new RichText("777", [ "days ", "of", " abandon" ]);
+    r.length.should.eql(15);
 
     r.at(0).should.eql("d");
     r.at(3).should.eql("s");
@@ -34,11 +40,17 @@ describe("RichText", () => {
     r.split(6).map(x => x.toString()).should.eql([ "{777:days o}", "{777:f abandon}" ]);
     r.split(13).map(x => x.toString()).should.eql([ "{777:days of aband}", "{777:on}" ]);
     r.split(15).map(x => x.toString()).should.eql([ "{777:days of abandon}", "{777:}" ]);
+
+    r.slice(0, 3).toString().should.eql("{777:day}");
+    r.slice(3, 13).toString().should.eql("{777:s of aband}");
+    r.slice(11).toString().should.eql("{777:ndon}");
   });
 
   it("nested", () => {
     const blue = RichText.string("blue", "of");
     const r = new RichText("777", [ "days ", blue, " abandon" ]);
+    r.length.should.eql(15);
+
     r.at(0).should.eql("d");
     r.at(3).should.eql("s");
     r.at(6).should.eql("f");
@@ -48,8 +60,14 @@ describe("RichText", () => {
     r.split(0).map(x => x.toString()).should.eql([ "{777:}", "{777:days {blue:of} abandon}" ]);
     r.split(3).map(x => x.toString()).should.eql([ "{777:day}", "{777:s {blue:of} abandon}" ]);
     r.split(6).map(x => x.toString()).should.eql([ "{777:days {blue:o}}", "{777:{blue:f} abandon}" ]);
+    r.split(-9).map(x => x.toString()).should.eql([ "{777:days {blue:o}}", "{777:{blue:f} abandon}" ]);
     r.split(13).map(x => x.toString()).should.eql([ "{777:days {blue:of} aband}", "{777:on}" ]);
+    r.split(-2).map(x => x.toString()).should.eql([ "{777:days {blue:of} aband}", "{777:on}" ]);
     r.split(15).map(x => x.toString()).should.eql([ "{777:days {blue:of} abandon}", "{777:}" ]);
+
+    r.slice(0, 3).toString().should.eql("{777:day}");
+    r.slice(3, 13).toString().should.eql("{777:s {blue:of} aband}");
+    r.slice(11).toString().should.eql("{777:ndon}");
   });
 
   it("deeply nested", () => {
@@ -69,6 +87,10 @@ describe("RichText", () => {
     r.split(6).map(x => x.toString()).should.eql([ "{777:{888:days {blue:o}}}", "{777:{888:{blue:f} a{red:band}}on}" ]);
     r.split(13).map(x => x.toString()).should.eql([ "{777:{888:days {blue:of} a{red:band}}}", "{777:on}" ]);
     r.split(15).map(x => x.toString()).should.eql([ "{777:{888:days {blue:of} a{red:band}}on}", "{777:}" ]);
+
+    r.slice(0, 3).toString().should.eql("{777:{888:day}}");
+    r.slice(3, 13).toString().should.eql("{777:{888:s {blue:of} a{red:band}}}");
+    r.slice(11).toString().should.eql("{777:{888:{red:nd}}on}");
   });
 
   it("parse", () => {
