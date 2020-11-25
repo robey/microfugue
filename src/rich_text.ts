@@ -155,6 +155,7 @@ export class RichText {
   }
 
   slice(start: number, end: number = this.length): RichText {
+    if (end > this.length) end = this.length;
     const [ startIndex, startOffset ] = this.findIndex(start);
     const [ endIndex, endOffset ] = this.findIndex(end);
     if (startIndex == -1 || endIndex == -1) return RichText.string(this.color, "");
