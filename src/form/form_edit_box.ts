@@ -1,13 +1,15 @@
 import { Constraint, GridLayout, Key, Region } from "antsy";
 import { EditBox } from "../edit_box";
 import { Form, FormComponent } from "../form";
-import { COLOR_COMPONENT, COLOR_COMPONENT_FOCUS, COLOR_FG, COLOR_FG_FOCUS } from "./form_colors";
+import { COLOR_COMPONENT, COLOR_COMPONENT_FOCUS, COLOR_DIM, COLOR_DIM_FOCUS, COLOR_FG, COLOR_FG_FOCUS } from "./form_colors";
 
 export interface FormEditBoxConfig {
   color: string;
   focusColor: string;
   textColor: string;
   focusTextColor: string;
+  dimColor: string;
+  focusDimColor: string;
 
   minWidth: number;
   maxLength: number;
@@ -16,7 +18,7 @@ export interface FormEditBoxConfig {
 
   enterAction: "ignore" | "commit" | "insert";
   wordWrap: boolean;
-  visibleLinefeed?: string;
+  visibleLinefeed: boolean;
 }
 
 const DEFAULT_EDIT_BOX_CONFIG: FormEditBoxConfig = {
@@ -24,6 +26,8 @@ const DEFAULT_EDIT_BOX_CONFIG: FormEditBoxConfig = {
   focusColor: COLOR_COMPONENT_FOCUS,
   textColor: COLOR_FG,
   focusTextColor: COLOR_FG_FOCUS,
+  dimColor: COLOR_DIM,
+  focusDimColor: COLOR_DIM_FOCUS,
 
   minWidth: 10,
   maxLength: 255,
@@ -32,6 +36,7 @@ const DEFAULT_EDIT_BOX_CONFIG: FormEditBoxConfig = {
 
   enterAction: "ignore",
   wordWrap: false,
+  visibleLinefeed: false,
 };
 
 // simplest component: just text
@@ -57,6 +62,7 @@ export class FormEditBox implements FormComponent {
       this.editBox.reconfigure({
         color: this.config.focusTextColor,
         backgroundColor: this.config.focusColor,
+        suggestionColor: this.config.focusDimColor,
         focused: true,
       });
     }
@@ -68,6 +74,7 @@ export class FormEditBox implements FormComponent {
       this.editBox.reconfigure({
         color: this.config.textColor,
         backgroundColor: this.config.color,
+        suggestionColor: this.config.dimColor,
         focused: false,
       });
     }
@@ -120,6 +127,6 @@ export class FormEditBox implements FormComponent {
   }
 
   get text(): string {
-    return this.editBox?.line ?? this.content;
+    return this.editBox?.text ?? this.content;
   }
 }

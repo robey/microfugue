@@ -4,8 +4,8 @@ import { RichText } from "./rich_text";
 
 const ELLIPSIS = "\u2026";
 
-// FIXME: placeholder
-const VISIBLE_CR = "@";
+// <-'
+const VISIBLE_CR = "\u21b2";
 
 export interface EditBoxConfig {
   // colors for the actual text being edited
@@ -41,7 +41,7 @@ export interface EditBoxConfig {
   wordWrap: boolean;
 
   // draw a visible linefeed when inserting them?
-  visibleLinefeed?: string;
+  visibleLinefeed: boolean;
 
   // own the cursor? (if true, we move the canvas's cursor to the edit
   // position. if false, we're viewing, not editing.)
@@ -59,16 +59,22 @@ const DEFAULT_CONFIG: EditBoxConfig = {
   useHistory: true,
   enterAction: "commit",
   wordWrap: false,
-  visibleLinefeed: VISIBLE_CR,
+  visibleLinefeed: true,
   focused: true,
 };
 
 export class EditBox {
   config: EditBoxConfig;
   maxLength: number = 0;
-  line: string = "";
-  pos: number = 0;
 
+  // the actual text, and a cache of individual lines
+  text: string = "";
+  lines: RichText[] = [];
+  // cache of the visible linefeed, if any
+  cachedLinefeed: RichText;
+
+  // where's the cursor?
+  pos: number = 0;
   // when scrolling around a region, where does the visible text start?
   visiblePos: number = 0;
   // what's the ideal height?
@@ -99,14 +105,16 @@ export class EditBox {
     this.config = Object.assign({}, DEFAULT_CONFIG, options);
     this.history = this.config.history.slice();
     this.maxLength = this.config.maxLength;
+    this.cachedLinefeed = RichText.string(this.config.suggestionColor, this.config.visibleLinefeed ? VISIBLE_CR : " ");
     this.reset();
     this.resize();
-    this.redraw();
   }
 
   reconfigure(config: Partial<EditBoxConfig>) {
     this.config = Object.assign({}, this.config, config);
-    this.redraw();
+    this.maxLength = this.config.maxLength;
+    this.cachedLinefeed = RichText.string(this.config.suggestionColor, this.config.visibleLinefeed ? VISIBLE_CR : " ");
+    this.redraw(true);
   }
 
   clearHistory() {
@@ -125,45 +133,47 @@ export class EditBox {
   }
 
   reset() {
-    this.line = "";
+    this.text = "";
     this.pos = 0;
     this.visiblePos = 0;
     this.historyIndex = this.history.length;
     this.saved = "";
     if (this.config.focused) this.moveCursor();
     this.setIdealHeight(1);
+    this.redraw(true);
   }
 
   resize() {
     if (!this.config.allowScroll) {
       this.maxLength = Math.min(this.config.maxLength, this.region.cols * this.region.rows - 1);
-      if (this.line.length > this.maxLength) this.line = this.line.slice(0, this.maxLength);
+      if (this.text.length > this.maxLength) this.text = this.text.slice(0, this.maxLength);
       if (this.pos > this.maxLength) this.pos = this.maxLength;
     }
     // in case we were resized to make room:
     this.visiblePos = 0;
-    this.redraw();
+    this.redraw(true);
   }
 
-  redraw() {
-    if (this.config.focused && this.moveCursor()) return;
-    this._redraw(this.lines());
+  redraw(textChanged: boolean = false) {
+    if (textChanged) this.rebuildLines();
+    if (this.config.focused && this.moveCursor(this.pos)) return;
+    this._redraw();
   }
 
-  private _redraw(lines: RichText[]) {
+  private _redraw() {
     // in case of rendering bug, bail.
     if (this.region.rows < 1) return;
 
-    const [ vx, vy ] = this.positionToCursor(lines, this.visiblePos);
-    const displayLines = lines.slice(vy, vy + this.region.rows);
+    const [ vx, vy ] = this.positionToCursor(this.visiblePos);
+    const displayLines = this.lines.slice(vy, vy + this.region.rows);
     const bottom = displayLines.length - 1;
-    if (lines.length == 1 && this.visiblePos > 0 && this.config.heightChangeRequest) {
+    if (this.lines.length == 1 && this.visiblePos > 0 && this.config.heightChangeRequest) {
       // some edit boxes are restricted to one line. deal with that by
       // scrolling horizontally, but ask for more. if we get more, we'll do
       // proper word wrapping on the next go round.
       this.setIdealHeight(2);
     } else {
-      this.setIdealHeight(lines.length);
+      this.setIdealHeight(this.lines.length);
     }
 
     // the visible position will be in mid-line if we only have one display line to work with
@@ -172,7 +182,7 @@ export class EditBox {
     // put in ellipsis at the start or end if there's more text than we can display
     const ellipsis = RichText.string(this.config.suggestionColor, ELLIPSIS);
     if (this.visiblePos > 0) displayLines[0] = ellipsis.append(displayLines[0].slice(1));
-    if (vy + this.region.rows < lines.length || (bottom >= 0 && displayLines[bottom].length >= this.region.cols)) {
+    if (vy + this.region.rows < this.lines.length || (bottom >= 0 && displayLines[bottom].length >= this.region.cols)) {
       displayLines[bottom] = displayLines[bottom].slice(0, this.region.cols - 1).append(ellipsis);
     }
 
@@ -183,49 +193,50 @@ export class EditBox {
   // move the canvas cursor to `pos`, possibly shifting the part of the text that's visible.
   // returns true if it had to trigger a redraw.
   moveCursor(pos: number = this.pos): boolean {
-    return this._moveCursor(pos, this.lines());
+    this.pos = pos;
+    const didRedraw = this.config.allowScroll && this.adjustVisible(pos);
+    const [ vx, vy ] = this.positionToCursor(this.visiblePos);
+    let [ px, py ] = this.positionToCursor();
+    this.region.moveCursor(px - vx, py - vy);
+    return didRedraw;
   }
 
-  _moveCursor(pos: number, lines: RichText[]): boolean {
+  // shift the part of the text that's visible, if the cursor is off-camera.
+  // returns true if it had to redraw.
+  private adjustVisible(pos: number = this.pos): boolean {
     const oldVisiblePos = this.visiblePos;
 
-    if (this.config.allowScroll) {
-      if (this.region.rows == 1) {
-        // scroll around horizontally by half a line at a time
-        const stride = Math.floor(this.region.cols / 2);
-        // fix in case a resize has made our offset weird:
-        this.visiblePos = Math.floor(this.visiblePos / stride) * stride;
-        while (pos <= this.visiblePos && this.visiblePos > 0) this.visiblePos -= stride;
-        while (pos >= this.visiblePos + this.region.cols) this.visiblePos += stride;
-      } else {
-        // ensure we're moving one line at a time
-        let [ vx, vy ] = this.positionToCursor(lines, this.visiblePos);
-        if (vx > 0) {
-          this.visiblePos -= vx;
-          vx = 0;
-        }
-
-        while (pos <= this.visiblePos && this.visiblePos > 0) {
-          vy--;
-          this.visiblePos -= lines[vy].length;
-        }
-        let visible = lines.slice(vy, vy + this.region.rows).map(line => line.length).reduce((a, b) => a + b, 0);
-        while (pos > this.visiblePos + visible - 1 && vy < lines.length - this.region.rows) {
-          this.visiblePos += lines[vy].length;
-          visible -= lines[vy].length;
-          if (vy + this.region.rows < lines.length) visible += lines[vy + this.region.rows].length;
-          vy++;
-        }
+    if (this.region.rows == 1) {
+      // scroll around horizontally by half a line at a time
+      const stride = Math.floor(this.region.cols / 2);
+      // fix in case a resize has made our offset weird:
+      this.visiblePos = Math.floor(this.visiblePos / stride) * stride;
+      while (pos <= this.visiblePos && this.visiblePos > 0) this.visiblePos -= stride;
+      while (pos >= this.visiblePos + this.region.cols) this.visiblePos += stride;
+    } else {
+      // ensure we're moving one line at a time
+      let [ vx, vy ] = this.positionToCursor(this.visiblePos);
+      if (vx > 0) {
+        this.visiblePos -= vx;
+        vx = 0;
       }
 
-      if (this.visiblePos != oldVisiblePos) this._redraw(lines);
+      while (pos <= this.visiblePos && this.visiblePos > 0) {
+        vy--;
+        this.visiblePos -= this.lines[vy].length;
+      }
+      let visible = this.lines.slice(vy, vy + this.region.rows).map(line => line.length).reduce((a, b) => a + b, 0);
+      while (pos > this.visiblePos + visible - 1 && vy < this.lines.length - this.region.rows) {
+        this.visiblePos += this.lines[vy].length;
+        visible -= this.lines[vy].length;
+        if (vy + this.region.rows < this.lines.length) visible += this.lines[vy + this.region.rows].length;
+        vy++;
+      }
     }
 
-    this.pos = pos;
-    const [ vx, vy ] = this.positionToCursor(lines, this.visiblePos);
-    const [ px, py ] = this.positionToCursor(lines, pos);
-    this.region.moveCursor(px - vx, py - vy);
-    return this.visiblePos != oldVisiblePos;
+    if (this.visiblePos == oldVisiblePos) return false;
+    this._redraw();
+    return true;
   }
 
   attachStream(s: AsyncIterable<Buffer | string>): AsyncIterable<string> {
@@ -236,16 +247,16 @@ export class EditBox {
     return this.events;
   }
 
+  private get lastLine(): RichText {
+    return this.lines[this.lines.length - 1] ?? RichText.string(this.config.color, "");
+  }
+
   // break up our text into lines that will each fit one line of our box.
   // include linefeeds and any active suggestion.
-  private lines(): RichText[] {
+  private rebuildLines() {
     // first, any real "\n". put a visible CR in them if desired.
-    let lines = this.line.split("\n").map(s => RichText.string(this.config.color, s));
-
-    if (this.config.visibleLinefeed) {
-      const lf = RichText.string(this.config.suggestionColor, this.config.visibleLinefeed);
-      for (let y = 0; y < lines.length - 1; y++) lines[y] = lines[y].append(lf);
-    }
+    let lines = this.text.split("\n").map(s => RichText.string(this.config.color, s));
+    for (let y = 0; y < lines.length - 1; y++) lines[y] = lines[y].append(this.cachedLinefeed);
     if (this.suggestions && this.suggestionIndex !== undefined) {
       const add = RichText.string(this.config.suggestionColor, this.suggestions[this.suggestionIndex]);
       lines[lines.length - 1] = lines[lines.length - 1].append(add);
@@ -258,23 +269,36 @@ export class EditBox {
       // make sure there's extra space if the cursor would be off-screen
       if (lines[lines.length - 1].length == this.region.cols) lines.push(RichText.string(this.config.color, ""));
     }
-    return lines;
+
+    this.lines = lines;
   }
 
   // return [x, y] of where the position would be in the line
-  private positionToCursor(lines: RichText[], pos: number = this.pos): [ number, number ] {
+  private positionToCursor(pos: number = this.pos): [ number, number ] {
+    const postLF = pos > 0 && this.text[pos - 1] == "\n";
     let y = 0;
-    while (y < lines.length && lines[y].length < pos) {
-      pos -= lines[y].length;
+    while (y < this.lines.length && this.lines[y].length < pos) {
+      pos -= this.lines[y].length;
       y++;
     }
     // past the end? ... shouldn't really happen but whatever.
-    if (y >= lines.length) return [ lines[lines.length - 1].length, lines.length - 1 ];
-    if (pos == this.region.cols && y < lines.length - 1) {
+    if (y >= this.lines.length) return [ this.lastLine.length, this.lines.length - 1 ];
+    if ((pos == this.lines[y].length || postLF) && y < this.lines.length - 1) {
       y++;
       pos = 0;
     }
     return [ pos, y ];
+  }
+
+  private cursorToPosition(x: number, y: number): number {
+    let pos = 0;
+    for (let i = 0; i < y && i < this.lines.length; i++) pos += this.lines[i].length;
+    if (y >= this.lines.length) return pos;
+    x = Math.min(x, this.lines[y].length);
+    pos += x;
+    if (y < this.lines.length - 1 && x == this.lines[y].length) pos--;
+    // if (x == this.lines[y].length && pos > 0 && (this.text[pos - 1] == "\n" || x == this.region.cols)) pos--;
+    return pos;
   }
 
   private setIdealHeight(lines: number) {
@@ -284,15 +308,15 @@ export class EditBox {
   }
 
   content(): string {
-    return this.line;
+    return this.text;
   }
 
   contentLeft(): string {
-    return this.line.slice(0, this.pos);
+    return this.text.slice(0, this.pos);
   }
 
   contentRight(): string {
-    return this.line.slice(this.pos);
+    return this.text.slice(this.pos);
   }
 
   feed(key: Key) {
@@ -395,21 +419,21 @@ export class EditBox {
   // ----- commands
 
   insert(text: string) {
-    this.line = this.line.slice(0, this.pos) + text + this.line.slice(this.pos);
+    this.text = this.text.slice(0, this.pos) + text + this.text.slice(this.pos);
     this.pos += text.length;
-    if (this.line.length > this.maxLength) {
+    if (this.text.length > this.maxLength) {
       // truncate and redraw. boo.
-      this.line = this.line.slice(0, this.maxLength);
-      if (this.pos > this.line.length) this.pos = this.line.length;
+      this.text = this.text.slice(0, this.maxLength);
+      if (this.pos > this.text.length) this.pos = this.text.length;
     }
-    this.redraw();
+    this.redraw(true);
   }
 
   tab() {
     if (this.suggestions && this.suggestionIndex !== undefined) {
       // next suggestion
       this.suggestionIndex = (this.suggestionIndex + 1) % this.suggestions.length;
-      this.redraw();
+      this.redraw(true);
       return;
     }
 
@@ -428,31 +452,30 @@ export class EditBox {
     }
     this.suggestions = suggestions;
     this.suggestionIndex = 0;
-    this.redraw();
+    this.redraw(true);
   }
 
   enter() {
     if (this.config.enterAction == "ignore") return;
     if (this.config.enterAction == "insert") return this.insert("\n");
-
-    if (this.line.length > 0 && this.config.useHistory) this.recordHistory(this.line);
-    const line = this.line;
+    if (this.text.length > 0 && this.config.useHistory) this.recordHistory(this.text);
+    const text = this.text;
     this.reset();
-    this.redraw();
-    this.events.push(line);
+    this.redraw(true);
+    this.events.push(text);
   }
 
   backspace() {
     if (this.pos == 0) return;
     this.pos -= 1;
-    this.line = this.line.slice(0, this.pos) + this.line.slice(this.pos + 1);
-    this.redraw();
+    this.text = this.text.slice(0, this.pos) + this.text.slice(this.pos + 1);
+    this.redraw(true);
   }
 
   deleteForward() {
-    if (this.pos == this.line.length) return;
-    this.line = this.line.slice(0, this.pos) + this.line.slice(this.pos + 1);
-    this.redraw();
+    if (this.pos == this.text.length) return;
+    this.text = this.text.slice(0, this.pos) + this.text.slice(this.pos + 1);
+    this.redraw(true);
   }
 
   left() {
@@ -467,80 +490,95 @@ export class EditBox {
       this.clearSuggestions();
       return;
     }
-    if (this.pos >= this.line.length) return;
+    if (this.pos >= this.text.length) return;
     this.moveCursor(this.pos + 1);
   }
 
   wordLeft() {
     let pos = this.pos;
-    while (pos > 0 && !this.line[pos - 1].match(/[\w\d]/)) pos -= 1;
-    while (pos > 0 && this.line[pos - 1].match(/[\w\d]/)) pos -= 1;
+    while (pos > 0 && !this.text[pos - 1].match(/[\w\d]/)) pos -= 1;
+    while (pos > 0 && this.text[pos - 1].match(/[\w\d]/)) pos -= 1;
     this.moveCursor(pos);
   }
 
   wordRight() {
     let pos = this.pos;
-    while (pos < this.line.length && !this.line[pos].match(/[\w\d]/)) pos += 1;
-    while (pos < this.line.length && this.line[pos].match(/[\w\d]/)) pos += 1;
+    while (pos < this.text.length && !this.text[pos].match(/[\w\d]/)) pos += 1;
+    while (pos < this.text.length && this.text[pos].match(/[\w\d]/)) pos += 1;
     this.moveCursor(pos);
   }
 
   scrollUp() {
-    const roundFactor = this.region.rows == 1 ? Math.floor(this.region.cols / 2) : this.region.cols;
-    if (this.pos < roundFactor) return;
-    this.moveCursor(this.pos - roundFactor);
+    if (this.region.rows == 1) {
+      // scan left
+      const stride = Math.floor(this.region.cols / 2);
+      this.moveCursor(Math.max(this.pos - stride, 0));
+    } else {
+      const [ x, y ] = this.positionToCursor();
+      if (y == 0) return;
+      this.moveCursor(this.cursorToPosition(x, y - 1));
+    }
   }
 
   scrollDown() {
-    const roundFactor = this.region.rows == 1 ? Math.floor(this.region.cols / 2) : this.region.cols;
-    if (this.pos + roundFactor > this.line.length) return;
-    this.moveCursor(this.pos + roundFactor);
+    if (this.region.rows == 1) {
+      // scan right
+      const stride = Math.floor(this.region.cols / 2);
+      this.moveCursor(Math.min(this.pos + stride, this.text.length));
+    } else {
+      const [ x, y ] = this.positionToCursor();
+      if (y == this.lines.length - 1) return;
+      this.moveCursor(this.cursorToPosition(x, y + 1));
+    }
   }
 
   home() {
-    this.moveCursor(0);
+    const [ x, y ] = this.positionToCursor();
+    this.moveCursor(this.cursorToPosition(0, y));
   }
 
   end() {
-    this.moveCursor(this.line.length);
+    const [ x, y ] = this.positionToCursor();
+    this.moveCursor(this.cursorToPosition(this.text.length, y));
   }
 
   deleteToEol() {
-    if (this.pos == this.line.length) return;
-    this.line = this.line.slice(0, this.pos);
-    this.redraw();
+    if (this.pos == this.text.length) return;
+    const [ x, y ] = this.positionToCursor();
+    this.text = this.text.slice(0, this.pos) + this.text.slice(this.cursorToPosition(this.text.length, y));
+    this.redraw(true);
   }
 
   transpose() {
-    if (this.pos == 0 || this.pos == this.line.length) return;
-    this.line = this.line.slice(0, this.pos - 1) + this.line[this.pos] + this.line[this.pos - 1] + this.line.slice(this.pos + 1);
-    this.redraw();
+    if (this.pos == 0 || this.pos == this.text.length) return;
+    this.text = this.text.slice(0, this.pos - 1) + this.text[this.pos] + this.text[this.pos - 1] + this.text.slice(this.pos + 1);
+    this.redraw(true);
   }
 
   deleteWord() {
     let pos = this.pos;
-    while (pos > 0 && !this.line[pos - 1].match(/[\w\d]/)) pos -= 1;
-    while (pos > 0 && this.line[pos - 1].match(/[\w\d]/)) pos -= 1;
-    this.line = this.line.slice(0, pos) + this.line.slice(this.pos);
-    this.redraw();
+    while (pos > 0 && !this.text[pos - 1].match(/[\w\d]/)) pos -= 1;
+    while (pos > 0 && this.text[pos - 1].match(/[\w\d]/)) pos -= 1;
+    this.text = this.text.slice(0, pos) + this.text.slice(this.pos);
+    this.redraw(true);
     this.moveCursor(pos);
   }
 
   historyPrevious() {
     if (this.historyIndex == 0) return;
-    if (this.historyIndex == this.history.length) this.saved = this.line;
+    if (this.historyIndex == this.history.length) this.saved = this.text;
     this.historyIndex -= 1;
-    this.line = this.history[this.historyIndex];
-    this.pos = this.line.length;
-    this.redraw();
+    this.text = this.history[this.historyIndex];
+    this.pos = this.text.length;
+    this.redraw(true);
   }
 
   historyNext() {
     if (this.historyIndex == this.history.length) return;
     this.historyIndex += 1;
-    this.line = (this.historyIndex == this.history.length) ? this.saved : this.history[this.historyIndex];
-    this.pos = this.line.length;
-    this.redraw();
+    this.text = (this.historyIndex == this.history.length) ? this.saved : this.history[this.historyIndex];
+    this.pos = this.text.length;
+    this.redraw(true);
   }
 
   recordHistory(line: string) {
@@ -559,11 +597,6 @@ export class EditBox {
   clearSuggestions() {
     this.suggestions = undefined;
     this.suggestionIndex = undefined;
-    this.redraw();
-  }
-
-  private suggestionLength(): number {
-    if (!this.suggestions || this.suggestionIndex === undefined) return 0;
-    return this.suggestions[this.suggestionIndex].length;
+    this.redraw(true);
   }
 }

@@ -280,15 +280,30 @@ describe("EditBox", () => {
     escpaint(canvas).should.eql("u");
 
     box.feed(Key.normal(Modifier.Control, "A"));
+    box.feed(new Key(Modifier.Control, KeyType.Up));
+    box.feed(new Key(Modifier.Control, KeyType.Up));
+    box.feed(new Key(Modifier.Control, KeyType.Up));
     escpaint(canvas).should.eql("[2H0123456789[3Habcdefghi[38;5;243m…[2H");
+    box.feed(new Key(Modifier.Control, KeyType.Down));
+    box.feed(new Key(Modifier.Control, KeyType.Down));
+    box.feed(new Key(Modifier.Control, KeyType.Down));
+    box.feed(new Key(Modifier.Control, KeyType.Down));
     box.feed(Key.normal(Modifier.Control, "E"));
     escpaint(canvas).should.eql("…[38;5;15mlmnopqrst[3Hu[K");
+    box.feed(new Key(0, KeyType.Left));
+    escpaint(canvas).should.eql("[D");
+    box.feed(new Key(0, KeyType.Left));
+    escpaint(canvas).should.eql("[2;10H");
+    box.feed(new Key(0, KeyType.Right));
+    escpaint(canvas).should.eql("[3H");
     for (let i = 0; i < 11; i++) box.feed(new Key(0, KeyType.Left));
-    escpaint(canvas).should.eql("[Abcdefghij[3Hklmnopqrs[38;5;243m…[10D");
+    escpaint(canvas).should.eql("[2;2Hbcdefghij[3Hklmnopqrs[38;5;243m…[2;10H");
 
+    box.feed(new Key(Modifier.Control, KeyType.Down));
+    box.feed(new Key(Modifier.Control, KeyType.Down));
     box.feed(Key.normal(Modifier.Control, "E"));
     box.feed(new Key(Modifier.Control, KeyType.Up));
-    escpaint(canvas).should.eql("[2;2H[38;5;15mlmnopqrst[3Hu[K[A");
+    escpaint(canvas).should.eql("[8D[38;5;15mlmnopqrst[3Hu[K[A");
     box.feed(new Key(Modifier.Control, KeyType.Up));
     escpaint(canvas).should.eql("bcdefghij[3Hklmnopqrs[38;5;243m…[2;2H");
     box.feed(new Key(Modifier.Control, KeyType.Down));
@@ -345,7 +360,8 @@ describe("EditBox", () => {
 
   describe("word wrap", () => {
     const commonOptions: Partial<EditBoxConfig> = {
-      color: "white", enterAction: "insert", wordWrap: true, visibleLinefeed: "@"
+      color: "white", enterAction: "insert", wordWrap: true, useHistory: false, visibleLinefeed: false,
+      allowScroll: true,
     };
 
     it("basic", () => {
@@ -364,15 +380,109 @@ describe("EditBox", () => {
       escpaint(canvas).should.eql("[2J[Hthis house is incre");
     });
 
-    it("visible linefeed", () => {
+    it("cursor movement", () => {
       const canvas = new Canvas(20, 3);
       const box = new EditBox(canvas.all(), commonOptions);
+      for (const ch of "this house is incredible\nlook out!") box.feed(Key.normal(0, ch));
+      escpaint(canvas).should.eql(`${WHITE}[40m[2J[Hthis house is[2Hincredible[3Hlook out!`);
+
+      for (let i = 0; i < 3; i++) box.feed(new Key(0, KeyType.Left));
+      for (let i = 0; i < 2; i++) box.feed(new Key(0, KeyType.Up));
+      escpaint(canvas).should.eql("[1;7H");
+
+      // pass the word-wrap space
+      for (let i = 0; i < 7; i++) box.feed(new Key(0, KeyType.Right));
+      escpaint(canvas).should.eql("[7C");
+      box.feed(new Key(0, KeyType.Right));
+      escpaint(canvas).should.eql("[2H");
+      box.feed(new Key(0, KeyType.Left));
+      escpaint(canvas).should.eql("[1;14H");
+
+      // pass the linefeed
+      box.feed(new Key(0, KeyType.Down));
+      escpaint(canvas).should.eql("[2;11H");
+      box.feed(new Key(0, KeyType.Right));
+      escpaint(canvas).should.eql("[3H");
+      box.feed(new Key(0, KeyType.Left));
+      escpaint(canvas).should.eql("[2;11H");
+    });
+
+    it("home/end", () => {
+      const canvas = new Canvas(20, 3);
+      const box = new EditBox(canvas.all(), commonOptions);
+      for (const ch of "this house is incredible\nlook out!") box.feed(Key.normal(0, ch));
+      escpaint(canvas).should.eql(`${WHITE}[40m[2J[Hthis house is[2Hincredible[3Hlook out!`);
+
+      box.feed(new Key(0, KeyType.Home));
+      escpaint(canvas).should.eql("[9D");
+      box.feed(new Key(0, KeyType.Up));
+      box.feed(Key.normal(Modifier.Control, "E"));
+      escpaint(canvas).should.eql("[2;11H");
+      box.feed(new Key(0, KeyType.Up));
+      box.feed(Key.normal(Modifier.Control, "E"));
+      escpaint(canvas).should.eql("[1;14H");
+    });
+
+    it("delete to end of line", () => {
+      const canvas = new Canvas(20, 3);
+      const box = new EditBox(canvas.all(), commonOptions);
+      for (const ch of "this house is incredible\nlook out!") box.feed(Key.normal(0, ch));
+      escpaint(canvas).should.eql(`${WHITE}[40m[2J[Hthis house is[2Hincredible[3Hlook out!`);
+
+      box.feed(new Key(0, KeyType.Left));
+      box.feed(new Key(0, KeyType.Up));
+      box.feed(Key.normal(Modifier.Control, "K"));
+      escpaint(canvas).should.eql(`[2J[Hthis house is[2Hincredib[3Hlook out![2;9H`);
+
+      box.feed(new Key(0, KeyType.Up));
+      box.feed(Key.normal(Modifier.Control, "K"));
+      escpaint(canvas).should.eql(`[2J[Hthis hou incredib[2Hlook out![1;9H`);
+    });
+
+    it("reflow", () => {
+      const canvas = new Canvas(20, 3);
+      const box = new EditBox(canvas.all(), commonOptions);
+      for (const ch of "this house is incredible\nlook out!") box.feed(Key.normal(0, ch));
+      escpaint(canvas).should.eql(`${WHITE}[40m[2J[Hthis house is[2Hincredible[3Hlook out!`);
+
+      for (let i = 0; i < 2; i++) box.feed(new Key(0, KeyType.Up));
+      for (let i = 0; i < 4; i++) box.feed(new Key(0, KeyType.Right));
+      escpaint(canvas).should.eql("[1;14H");
+
+      // delete the space. should reflow "isincredible" to line 2.
+      box.feed(new Key(0, KeyType.Delete));
+      escpaint(canvas).should.eql(`[2J[Hthis house[2Hisincredible[3Hlook out![2;3H`);
+
+      // add a space between "isin" and "credible"
+      for (let i = 0; i < 2; i++) box.feed(new Key(0, KeyType.Right));
+      box.feed(Key.normal(0, "-"));
+      escpaint(canvas).should.eql(`[2J[Hthis house isin-[2Hcredible[3Hlook out![2H`);
+    });
+
+    it("visible linefeed", () => {
+      const canvas = new Canvas(20, 3);
+      const box = new EditBox(canvas.all(), Object.assign({}, commonOptions, { visibleLinefeed: true }));
       for (const ch of "my chair!\n") box.feed(Key.normal(0, ch));
-      escpaint(canvas).should.eql(`${WHITE}[40m[2J[Hmy chair!${DIM}@`);
+      escpaint(canvas).should.eql(`${WHITE}[40m[2J[Hmy chair!${DIM}↲[2H`);
 
       for (const ch of "huh?") box.feed(Key.normal(0, ch));
-      escpaint(canvas).should.eql(`${WHITE}[2J[Hmy chair!${DIM}@[2H${WHITE}huh?`);
+      escpaint(canvas).should.eql(`${WHITE}[2J[Hmy chair!${DIM}↲[2H${WHITE}huh?`);
     });
+
+    it("vertical scroll within a region", () => {
+      const canvas = new Canvas(20, 3);
+      const box = new EditBox(canvas.all(), commonOptions);
+      for (const ch of "this house is incredible\nlook out!\nfourth line") box.feed(Key.normal(0, ch));
+      escpaint(canvas).should.eql(`${WHITE}[40m[2J[H${DIM}…${WHITE}ncredible[2Hlook out![3Hfourth line`);
+
+      box.feed(new Key(0, KeyType.Home));
+      box.feed(new Key(0, KeyType.Up));
+      escpaint(canvas).should.eql("[2H");
+      box.feed(new Key(0, KeyType.Up));
+      escpaint(canvas).should.eql(`[2J[Hthis house is[2Hincredible[3Hlook out!${DIM} …[2H`);
+    });
+
+    // vertical scroll shows "..." at the wrong place on the bottom when using linefeeds
   });
 
   describe("suggestions", () => {

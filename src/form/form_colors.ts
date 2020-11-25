@@ -6,5 +6,8 @@ export const COLOR_BG = "000";
 export const COLOR_FG = "999";
 export const COLOR_FG_FOCUS = "fff";
 
+export const COLOR_DIM = "777"
+export const COLOR_DIM_FOCUS = "99f";
+
 export const COLOR_COMPONENT = "333";
 export const COLOR_COMPONENT_FOCUS = "007";
