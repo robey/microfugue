@@ -67,12 +67,12 @@ describe("FormRow", () => {
 
     form.next();
     escpaint(canvas).should.eql(
-      `[2D${NORMAL}  Fail  [4;11H${FOCUS}▶ Save ◀[6D`
+      `[31D${GRAY}[40mError![23C${GRAY_BG}  Fail  [4;11H${FOCUS}▶ Save ◀[6D`
     );
 
     form.prev();
     escpaint(canvas).should.eql(
-      `[2;33H▶ Fail ◀[4;11H${NORMAL}  Save  [2;35H`
+      `[2;4H[40mError![23C${BLUE_BG}▶ Fail ◀[4;11H${NORMAL}  Save  [2;35H`
     );
 
     form.feed(Key.normal(0, " "));

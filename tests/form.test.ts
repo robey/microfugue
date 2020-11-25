@@ -152,7 +152,7 @@ describe("Form", () => {
 
     form.next();
     escpaint(canvas).should.eql(
-      `[2D  OK  [4;11H${FOCUS}▶ Cancel ◀[8D`
+      `[8D[40mDone? ${GRAY_BG}  OK  [4;11H${FOCUS}▶ Cancel ◀[8D`
     );
 
     // don't crash
@@ -161,7 +161,7 @@ describe("Form", () => {
 
     form.prev();
     escpaint(canvas).should.eql(
-      `[2;11H▶ OK ◀[4;11H${NORMAL}  Cancel  [2;13H`
+      `[2;5H[40mDone? [44m▶ OK ◀[4;11H${NORMAL}  Cancel  [2;13H`
     );
   });
 
@@ -241,7 +241,7 @@ describe("Form", () => {
       form.feed(Key.normal(0, "!"));
       form.feed(new Key(0, KeyType.Tab));
       escpaint(canvas).should.eql(
-        `[12Dtest content![K[21C${DIM}[40m ` +
+        `[19D[40mGripes ${GRAY_BG}test content![K[21C${DIM}[40m ` +
         `[3;11H${NORMAL}[K[34C${DIM}[40m ` +
         `[4;11H${NORMAL}[K[34C${DIM}[40m ` +
         `[6;11H${FOCUS}▶ OK ◀` +
@@ -275,40 +275,5 @@ describe("Form", () => {
         `${FOCUS} for yo[3;11Hu![K[17C${DIM}[40m [4H${WHITE}[K[5;11H${NORMAL}  OK  [3;13H`
       );
     });
-  });
-
-  it("complex form", async () => {
-    const canvas = new Canvas(80, 25);
-    canvas.all().color("red", "black").clear();
-    canvas.redraw();
-
-    const text1 = new FormText(RichText.parse("Editing a place..."));
-    const keyBox = new FormEditBox("tavern", { minWidth: 4, maxLength: 16, minHeight: 1, maxHeight: 1 });
-    const titleBox = new FormEditBox("Red Stag Tavern", { minWidth: 10, maxLength: 40, minHeight: 1, maxHeight: 1 });
-    const descBox = new FormEditBox(
-      "A rustic boardwalk begins here and continues to the east, with views of the southern endcap lake. A large building with few windows, made of weathered planks, lies to the north. A small sign swings from a pole next to the entrance. To the west, a stony path continues along the lake shore.",
-      { minHeight: 3, maxLength: 4096 }
-    );
-    const form = new Form(
-      canvas.all(),
-      [
-        { component: text1, fullWidth: true },
-        { component: keyBox, label: "Key:" },
-        { component: titleBox, label: "Title:" },
-        { component: descBox, label: "Description:" }
-      ],
-      {}
-    );
-
-    form.next();
-    form.next();
-
-    // wait for the descBox to resize to fit
-    await delay(10);
-    escpaint(canvas).should.eql(
-      ""
-    );
-
-    // console.log(canvas.paint() + "@\n\n\n\n\n\n\n\n");
   });
 });

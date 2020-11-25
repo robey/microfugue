@@ -150,7 +150,7 @@ export class Form {
       if (!f.fullWidth && f.label !== undefined) {
         let label = f.label;
         if (label.length > labelWidth) label = label.slice(0, labelWidth - 1) + "…";
-        this.labelRegions[i].backgroundColor(this.config.labelBackground).clear().color(
+        this.labelRegions[i].backgroundColor(this.config.labelBackground).color(
           i == this.focus ? this.config.labelFocusColor : this.config.labelColor,
           i == this.focus ? this.config.labelFocusBackground : this.config.labelBackground,
         ).clear().at(0, 0).write(lpad(label, labelWidth));
@@ -237,7 +237,7 @@ export class Form {
 
     this.fields[this.focus].component.takeFocus?.(direction);
     this.fields[this.focus].component.draw();
-    this.ensureFocus();
+    this.redraw();
   }
 
   next() {
