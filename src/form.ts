@@ -6,6 +6,7 @@ export { FormButton, FormButtonConfig } from "./form/form_button";
 import { COLOR_BG, COLOR_FG, COLOR_FG_FOCUS } from "./form/form_colors";
 export { FormEditBox, FormEditBoxConfig } from "./form/form_edit_box";
 export { FormRow, FormRowConfig } from "./form/form_row";
+export { FormSelector, FormSelectorConfig } from "./form/form_selector";
 export { FormText, FormTextConfig } from "./form/form_text";
 
 export interface FormConfig {
@@ -145,6 +146,8 @@ export class Form {
     const cols = [ this.config.left, this.config.right ];
     this.layout.update(cols, heights.map(y => GridLayout.fixed(y)));
 
+    this.canvas.all().backgroundColor(this.config.labelBackground).clear();
+
     const labelWidth = this.labelRegions[0].cols - this.config.labelSpacing;
     this.fields.forEach((f, i) => {
       if (!f.fullWidth && f.label !== undefined) {
@@ -158,8 +161,11 @@ export class Form {
 
       // clear out vertical space:
       this.regions[i].backgroundColor(this.config.labelBackground).clear();
-      f.component.draw();
+      if (this.focus != i) f.component.draw();
     });
+
+    // draw the focused component last, in case it's using a custom region:
+    this.fields[this.focus].component.draw();
     this.ensureFocus();
   }
 
@@ -204,6 +210,10 @@ export class Form {
       // "else" so we don't kill ourselves trying to fit on-screen
       this.scrollView.scrollDown(bottom - this.scrollView.frameBottom);
     }
+
+    const [ _cx, cy ] = this.canvas.cursor;
+    if (this.scrollView.frameTop > cy - 1) this.scrollView.scrollUp(this.scrollView.frameTop - cy + 1);
+    if (this.scrollView.frameBottom < cy + 2) this.scrollView.scrollDown(this.scrollView.frameBottom - cy + 2);
 
     this.scrollView.redraw();
     this.scrollView.setCursor();
