@@ -11,7 +11,7 @@ export interface FormButtonConfig {
   focusColor: string;
   focusTextColor: string;
 
-  // how much horizontal and vertical padding should there be around each button?
+  // how much horizontal and vertical padding should there be around the button?
   horizontalPadding: number;
   verticalPadding: number;
 
@@ -32,7 +32,7 @@ const DEFAULT_TEXT_CONFIG: FormButtonConfig = {
 };
 
 
-// simplest component: just text
+// a button that can be pressed
 export class FormButton implements FormComponent {
   acceptsFocus = true;
   config: FormButtonConfig;

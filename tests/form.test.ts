@@ -1,17 +1,17 @@
 import "should";
 import { Canvas, GridLayout, Key, KeyType, Modifier } from "antsy";
-import { Form, FormButton, FormEditBox, FormText, RichText } from "..";
+import { Form, FormButton, FormEditBox, FormSelector, FormText, RichText } from "..";
 
 const RESET = `[37m[40m`;
 const CLEAR = RESET + `[2J[H`;
 const BLUE = `[38;5;12m`;
 const RED = `[38;5;9m`;
 const WHITE = `[38;5;15m`;
+const PALE_BLUE = `[38;5;39m`;
 const GRAY = `[38;5;246m`;
 const BLUE_BG = `[44m`;
 const GRAY_BG = `[48;5;236m`;
 const DIM = `[38;5;243m`;
-const LABEL = `[38;5;252m`;
 const FOCUS = WHITE + BLUE_BG;
 const NORMAL = GRAY + GRAY_BG;
 
@@ -273,6 +273,197 @@ describe("Form", () => {
 
       escpaint(canvas).should.eql(
         `${FOCUS} for yo[3;11Hu![K[17C${DIM}[40m [4H${WHITE}[K[5;11H${NORMAL}  OK  [3;13H`
+      );
+    });
+  });
+
+  describe("selector", () => {
+    const commonChoices = [ "first", "second", "third" ].map(s => RichText.parse(s));
+
+    it("focus", () => {
+      const canvas = new Canvas(30, 8);
+      const text = new FormText(RichText.parse("filler"), { acceptsFocus: true });
+      const selector = new FormSelector(commonChoices, [ 0 ]);
+      const form = new Form(
+        canvas.all(),
+        [ { component: text }, { component: selector } ],
+        { left: GridLayout.fixed(10), labelSpacing: 2 },
+      );
+
+      escpaint(canvas).should.eql(
+        `${CLEAR}[2;11H${GRAY}filler` +
+        `[4;11H${GRAY_BG} ✓ first   ` +
+        `[2;11H`
+      );
+
+      form.feed(new Key(0, KeyType.Tab));
+      escpaint(canvas).should.eql(
+        `[2B${PALE_BLUE}${BLUE_BG}▶${WHITE}✓ first  ${PALE_BLUE}◀[10D`
+      );
+    });
+
+    it("activate", async () => {
+      const canvas = new Canvas(30, 8);
+      const text1 = new FormText(RichText.parse("filler"), { acceptsFocus: true });
+      const selector = new FormSelector(commonChoices, [ 0 ]);
+      const text2 = new FormText(RichText.parse("moar filler"), { acceptsFocus: true });
+      const form = new Form(
+        canvas.all(),
+        [ { component: text1 }, { component: selector }, { component: text2 } ],
+        { left: GridLayout.fixed(10), labelSpacing: 2 },
+      );
+
+      escpaint(canvas).should.eql(
+        `${CLEAR}[2;11H${GRAY}filler` +
+        `[4;11H${GRAY_BG} ✓ first   ` +
+        `[6;11H[40mmoar filler` +
+        `[2;11H`
+      );
+
+      form.feed(new Key(0, KeyType.Tab));
+      form.feed(Key.normal(0, " "));
+      escpaint(canvas).should.eql(
+        `[2B${PALE_BLUE}${BLUE_BG}▶${WHITE}✓ first  ${PALE_BLUE}◀` +
+        `[5;11H   second  ` +
+        `[6;11H   third   ` +
+        `[4;12H`
+      );
+
+      form.feed(new Key(0, KeyType.Down));
+      escpaint(canvas).should.eql(
+        `[D ✓ first   ` +
+        `[5;11H▶${WHITE}  second ${PALE_BLUE}◀` +
+        `[10D`
+      );
+
+      form.feed(new Key(0, KeyType.Down));
+      escpaint(canvas).should.eql(
+        `[D   second  ` +
+        `[6;11H▶${WHITE}  third  ${PALE_BLUE}◀` +
+        `[10D`
+      );
+
+      form.feed(Key.normal(0, " "));
+      escpaint(canvas).should.eql(
+        `[2A ` +
+        `[6;12H${WHITE}✓[D`
+      );
+    });
+
+    it("multi-select", () => {
+      const canvas = new Canvas(30, 8);
+      const text1 = new FormText(RichText.parse("filler"), { acceptsFocus: true });
+      const selector = new FormSelector(commonChoices, [ 0 ], { multiSelect: true });
+      const text2 = new FormText(RichText.parse("moar filler"), { acceptsFocus: true });
+      const form = new Form(
+        canvas.all(),
+        [ { component: text1 }, { component: selector }, { component: text2 } ],
+        { left: GridLayout.fixed(10), labelSpacing: 2 },
+      );
+
+      escpaint(canvas).should.eql(
+        `${CLEAR}[2;11H${GRAY}filler` +
+        `[4;11H${GRAY_BG} ✓ first   ` +
+        `[6;11H[40mmoar filler` +
+        `[2;11H`
+      );
+
+      form.feed(new Key(0, KeyType.Tab));
+      form.feed(Key.normal(0, " "));
+      form.feed(new Key(0, KeyType.Down));
+      form.feed(new Key(0, KeyType.Down));
+      form.feed(Key.normal(0, " "));
+      escpaint(canvas).should.eql(
+        `[2B${PALE_BLUE}${BLUE_BG} ✓ first   ` +
+        `[5;11H   second  ` +
+        `[6;11H▶${WHITE}✓ third  ${PALE_BLUE}◀` +
+        `[10D`
+      );
+    });
+
+    it("too big for canvas", () => {
+      const choices = [ "first", "second", "third", "fourth", "fifth", "sixth" ].map(s => RichText.parse(s));
+
+      const canvas = new Canvas(30, 5);
+      const selector = new FormSelector(choices, [ ], { multiSelect: true });
+      const form = new Form(
+        canvas.all(),
+        [ { component: selector } ],
+        { left: GridLayout.fixed(10), labelSpacing: 2, verticalPadding: 2 },
+      );
+
+      escpaint(canvas).should.eql(
+        `${CLEAR}[3;11H${PALE_BLUE}${BLUE_BG}▶${WHITE}  first  ${PALE_BLUE}◀[10D`
+      );
+
+      form.feed(Key.normal(0, " "));
+      escpaint(canvas).should.eql(
+        `[4;11H   second  [5;11H   …       [3;12H`
+      );
+
+      form.feed(new Key(0, KeyType.Down));
+      form.feed(new Key(0, KeyType.Down));
+      escpaint(canvas).should.eql(
+        `[2;11H   first   [3;11H   second  [4;11H▶${WHITE}  third  ${PALE_BLUE}◀[10D`
+      );
+
+      form.feed(new Key(0, KeyType.Down));
+      form.feed(new Key(0, KeyType.Down));
+      escpaint(canvas).should.eql(
+        `[1;11H   …       [2;14Hthird[3;14Hfourth[4;14H${WHITE}fifth[7D`
+      );
+
+      form.feed(new Key(0, KeyType.Down));
+      escpaint(canvas).should.eql(
+        `[2;14H${PALE_BLUE}fourth[3;15Hifth [4;14H${WHITE}six[5H${PALE_BLUE}[40m[K[4;12H`
+      );
+
+      form.feed(new Key(0, KeyType.Up));
+      escpaint(canvas).should.eql(
+        `[3;11H${BLUE_BG}▶${WHITE}  fifth  ${PALE_BLUE}◀[4;11H   sixth   [3;12H`
+      );
+    });
+
+    it("too big for scroll view", () => {
+      const choices = [ "first", "second", "third", "fourth", "fifth", "sixth" ].map(s => RichText.parse(s));
+
+      const canvas = new Canvas(30, 4);
+      const text1 = new FormText(RichText.parse("filler"));
+      const selector = new FormSelector(choices, [ 0 ], { multiSelect: true });
+      const text2 = new FormText(RichText.parse("moar filler down the screen"));
+      const form = new Form(
+        canvas.all(),
+        [ { component: text1 }, { component: selector }, { component: text2 } ],
+        { left: GridLayout.fixed(10), labelSpacing: 2 },
+      );
+
+      escpaint(canvas).should.eql(
+        `${CLEAR}[29C${DIM}│` +
+        `[2;11H${PALE_BLUE}${BLUE_BG}▶${WHITE}✓ first  ${PALE_BLUE}◀[8C${DIM}[40m█` +
+        `[3;30H█` +
+        `[4;11H${GRAY}moar filler down [37m  ${DIM}│` +
+        `[2;12H`
+      );
+
+      form.feed(Key.normal(0, " "));
+      escpaint(canvas).should.eql(
+        `[3;11H${PALE_BLUE}${BLUE_BG}   second  [4;11H   third   [2;12H`
+      );
+
+      form.feed(new Key(0, KeyType.Down));
+      form.feed(new Key(0, KeyType.Down));
+      form.feed(new Key(0, KeyType.Down));
+      escpaint(canvas).should.eql(
+        `[1;11H   second  ` +
+        `[2;11H   third   ${GRAY}[40m down   ${DIM}│` +
+        `[3;11H${PALE_BLUE}${BLUE_BG}▶${WHITE}  fourth ${PALE_BLUE}◀` +
+        `[4;14H…    [3C${GRAY}[40m[K[8C${DIM}█` +
+        `[3;12H`
+      );
+
+      form.feed(new Key(0, KeyType.Down));
+      escpaint(canvas).should.eql(
+        `[1;14H${PALE_BLUE}${BLUE_BG}third [2;14Hfourth[3;15H${WHITE}ifth [8D`
       );
     });
   });

@@ -1,6 +1,11 @@
 export { EditBox } from "./edit_box";
 export {
-  Form, FormButton, FormButtonConfig, FormEditBox, FormEditBoxConfig, FormRow, FormRowConfig, FormText, FormTextConfig
+  Form,
+  FormButton, FormButtonConfig,
+  FormEditBox, FormEditBoxConfig,
+  FormRow, FormRowConfig,
+  FormSelector, FormSelectorConfig,
+  FormText, FormTextConfig,
 } from "./form";
 export { LogView, LogViewConfig } from "./log_view";
 export { RichText } from "./rich_text";
