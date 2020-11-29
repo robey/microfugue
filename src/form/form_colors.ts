@@ -11,3 +11,4 @@ export const COLOR_DIM_FOCUS = "0af";
 
 export const COLOR_COMPONENT = "333";
 export const COLOR_COMPONENT_FOCUS = "007";
+export const COLOR_COMPONENT_ERROR = "700";

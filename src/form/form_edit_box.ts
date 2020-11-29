@@ -1,7 +1,7 @@
 import { Constraint, GridLayout, Key, Region } from "antsy";
 import { EditBox } from "../edit_box";
 import { Form, FormComponent } from "../form";
-import { COLOR_COMPONENT, COLOR_COMPONENT_FOCUS, COLOR_DIM, COLOR_DIM_FOCUS, COLOR_FG, COLOR_FG_FOCUS } from "./form_colors";
+import { COLOR_COMPONENT, COLOR_COMPONENT_ERROR, COLOR_COMPONENT_FOCUS, COLOR_DIM, COLOR_DIM_FOCUS, COLOR_FG, COLOR_FG_FOCUS } from "./form_colors";
 
 export interface FormEditBoxConfig {
   color: string;
@@ -10,6 +10,7 @@ export interface FormEditBoxConfig {
   focusTextColor: string;
   dimColor: string;
   focusDimColor: string;
+  errorColor: string;
 
   minWidth: number;
   maxLength: number;
@@ -19,6 +20,8 @@ export interface FormEditBoxConfig {
   enterAction: "ignore" | "commit" | "insert";
   wordWrap: boolean;
   visibleLinefeed: boolean;
+
+  allowBlur?: () => boolean;
 }
 
 const DEFAULT_EDIT_BOX_CONFIG: FormEditBoxConfig = {
@@ -28,6 +31,7 @@ const DEFAULT_EDIT_BOX_CONFIG: FormEditBoxConfig = {
   focusTextColor: COLOR_FG_FOCUS,
   dimColor: COLOR_DIM,
   focusDimColor: COLOR_DIM_FOCUS,
+  errorColor: COLOR_COMPONENT_ERROR,
 
   minWidth: 10,
   maxLength: 255,
@@ -49,6 +53,7 @@ export class FormEditBox implements FormComponent {
   layout?: GridLayout;
   editBox?: EditBox;
   height: number;
+  isError = false;
 
   constructor(public content: string, options: Partial<FormEditBoxConfig> = {}) {
     this.config = Object.assign({}, DEFAULT_EDIT_BOX_CONFIG, options);
@@ -123,10 +128,23 @@ export class FormEditBox implements FormComponent {
   }
 
   feed(key: Key) {
+    if (this.isError) {
+      this.editBox?.reconfigure({ backgroundColor: this.config.color });
+      this.isError = false;
+    }
     if (this.editBox) this.editBox.feed(key);
   }
 
   get text(): string {
     return this.editBox?.text ?? this.content;
+  }
+
+  // return true to remain focused
+  shiftFocus(_direction: number): boolean {
+    if (!this.config.allowBlur) return false;
+    if (this.config.allowBlur()) return false;
+    this.isError = true;
+    this.editBox?.reconfigure({ backgroundColor: this.config.errorColor });
+    return true;
   }
 }

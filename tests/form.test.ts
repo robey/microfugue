@@ -10,6 +10,7 @@ const WHITE = `[38;5;15m`;
 const PALE_BLUE = `[38;5;39m`;
 const GRAY = `[38;5;246m`;
 const BLUE_BG = `[44m`;
+const RED_BG = `[41m`;
 const GRAY_BG = `[48;5;236m`;
 const DIM = `[38;5;243m`;
 const FOCUS = WHITE + BLUE_BG;
@@ -98,7 +99,6 @@ describe("Form", () => {
     );
   });
 
-  // vertical padding
   it("computes vertical padding", () => {
     const canvas = new Canvas(25, 8);
     const c1 = new FormText(RichText.parse("{00f:blue}", "fff"));
@@ -113,6 +113,23 @@ describe("Form", () => {
       `${CLEAR}[2B${BLUE}blue` +
       `[6H${RED}red[3H`
     );
+  });
+
+  it("computes custom vertical padding", () => {
+    const canvas = new Canvas(25, 8);
+    const c1 = new FormText(RichText.parse("{00f:blue}", "fff"));
+    const c2 = new FormText(RichText.parse("{f00:red", "fff"));
+    const form = new Form(
+      canvas.all(),
+      [ { component: c1, fullWidth: true, paddingBelow: 0 }, { component: c2, fullWidth: true, paddingBelow: 1 }, ],
+      { verticalPadding: 2 }
+    );
+
+    escpaint(canvas).should.eql(
+      `${CLEAR}[2B${BLUE}blue` +
+      `[4H${RED}red[3H`
+    );
+    form.canvas.rows.should.eql(5);
   });
 
   it("button", () => {
@@ -164,6 +181,7 @@ describe("Form", () => {
       `[2;5H[40mDone? [44m▶ OK ◀[4;11H${NORMAL}  Cancel  [2;13H`
     );
   });
+
 
   describe("edit box", () => {
     it("draws", () => {
@@ -275,7 +293,43 @@ describe("Form", () => {
         `${FOCUS} for yo[3;11Hu![K[17C${DIM}[40m [4H${WHITE}[K[5;11H${NORMAL}  OK  [3;13H`
       );
     });
+
+    it("forbids errors", () => {
+      const canvas = new Canvas(30, 8);
+      const button = new FormButton(RichText.parse("OK"), () => null);
+      const box: FormEditBox = new FormEditBox(
+        "test content",
+        { minHeight: 1, maxHeight: 3, allowBlur: () => box.text == "hello" }
+      );
+      const form = new Form(
+        canvas.all(),
+        [ { component: box, label: "Gripes" }, { component: button } ],
+        { left: GridLayout.fixed(10), labelSpacing: 2 },
+      );
+
+      escpaint(canvas).should.eql(
+        `${CLEAR}[2;3H${WHITE}Gripes  ` +
+        `${BLUE_BG}test content       ` +
+        `[4;11H${NORMAL}  OK  ` +
+        `[2;23H`
+      );
+
+      form.feed(new Key(0, KeyType.Tab));
+      escpaint(canvas).should.eql(
+        `[12D${WHITE}${RED_BG}test content       [7D`
+      );
+
+      form.feed(new Key(0, KeyType.Home));
+      form.feed(Key.normal(Modifier.Control, "K"));
+      for (const ch of "hello") form.feed(Key.normal(0, ch));
+      form.feed(new Key(0, KeyType.Tab));
+      escpaint(canvas).should.eql(
+        `[20D${GRAY}[40mGripes  ${GRAY_BG}hello[K[14C${DIM}[40m ` +
+        `[4;11H${FOCUS}▶ OK ◀[4D`
+      );
+    });
   });
+
 
   describe("selector", () => {
     const commonChoices = [ "first", "second", "third" ].map(s => RichText.parse(s));

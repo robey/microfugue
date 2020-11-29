@@ -79,6 +79,9 @@ export interface FormField {
   // a full-width field will use the entire width for the component, ignoring the label
   fullWidth?: boolean;
 
+  // use custom padding below this component?
+  paddingBelow?: number;
+
   // the component handles drawing and interactions
   component: FormComponent;
 }
@@ -137,7 +140,8 @@ export class Form {
     const heights = this.fields.map((f, i) => {
       const h = f.component.computeHeight(this.regions[i].cols);
       // even if your height is 0, if you have a label, you've got 1 line
-      return Math.max(h, f.label !== undefined ? 1 : 0) + this.config.verticalPadding;
+      return Math.max(h, f.label !== undefined ? 1 : 0) +
+        (f.paddingBelow === undefined ? this.config.verticalPadding : f.paddingBelow);
     });
     heights.unshift(this.config.verticalPadding);
     const height = heights.reduce((sum, b) => sum + b, 0);
