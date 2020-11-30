@@ -132,10 +132,10 @@ export class Form {
       f.component.attach(region, this);
       this.regions.push(region);
     });
-    this.redraw();
+    this.resize();
   }
 
-  redraw() {
+  resize() {
     // top grid row is vertical padding; the rest of the padding is the last row of each component
     const heights = this.fields.map((f, i) => {
       const h = f.component.computeHeight(this.regions[i].cols);
@@ -150,6 +150,10 @@ export class Form {
     const cols = [ this.config.left, this.config.right ];
     this.layout.update(cols, heights.map(y => GridLayout.fixed(y)));
 
+    this.redraw();
+  }
+
+  redraw() {
     this.canvas.all().backgroundColor(this.config.labelBackground).clear();
 
     const labelWidth = this.labelRegions[0].cols - this.config.labelSpacing;
