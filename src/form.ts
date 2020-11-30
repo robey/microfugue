@@ -226,12 +226,7 @@ export class Form {
   private shiftFocus(direction: number): void {
     // if it can stay within one component, let it.
     if (this.focus >= 0 && this.focus < this.fields.length) {
-      const component = this.fields[this.focus].component;
-      if (component.shiftFocus && component.shiftFocus(direction)) {
-        this.fields[this.focus].component.draw();
-        this.redraw();
-        return;
-      }
+      if (this.fields[this.focus].component.shiftFocus?.(direction)) return this.redraw();
     }
 
     // bail if nothing accepts focus.

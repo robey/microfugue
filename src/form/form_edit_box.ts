@@ -21,7 +21,7 @@ export interface FormEditBoxConfig {
   wordWrap: boolean;
   visibleLinefeed: boolean;
 
-  allowBlur?: () => boolean;
+  allowBlur?: (box: FormEditBox) => boolean;
 }
 
 const DEFAULT_EDIT_BOX_CONFIG: FormEditBoxConfig = {
@@ -55,7 +55,7 @@ export class FormEditBox implements FormComponent {
   height: number;
   isError = false;
 
-  constructor(public content: string, options: Partial<FormEditBoxConfig> = {}) {
+  constructor(private content: string, options: Partial<FormEditBoxConfig> = {}) {
     this.config = Object.assign({}, DEFAULT_EDIT_BOX_CONFIG, options);
     this.height = this.config.minHeight;
     this.constraint = GridLayout.stretchWithMinMax(1, this.config.minWidth, this.config.maxLength);
@@ -148,7 +148,7 @@ export class FormEditBox implements FormComponent {
   // return true to remain focused
   shiftFocus(_direction: number): boolean {
     if (!this.config.allowBlur) return false;
-    if (this.config.allowBlur()) return false;
+    if (this.config.allowBlur(this)) return false;
     this.isError = true;
     this.editBox?.reconfigure({ backgroundColor: this.config.errorColor });
     return true;

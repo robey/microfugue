@@ -7,6 +7,7 @@ const CLEAR = RESET + `[2J[H`;
 const WHITE = `[38;5;15m`;
 const PALE_BLUE = `[38;5;39m`;
 const GRAY = `[38;5;246m`;
+const RED_BG = `[41m`;
 const BLUE_BG = `[44m`;
 const GRAY_BG = `[48;5;236m`;
 const DIM = `[38;5;243m`;
@@ -133,7 +134,7 @@ describe("FormRow", () => {
 
   it("edit box with sub-label", async () => {
     const canvas = new Canvas(45, 8);
-    const button = new FormButton(RichText.parse("Clear"), () => { box.content = ""; form.redraw(); });
+    const button = new FormButton(RichText.parse("Clear"), () => box.editBox?.reset());
     const box = new FormEditBox("test content", { minHeight: 3, maxHeight: 5 });
     const row = new FormRow([ button, box ]);
     const form = new Form(
@@ -196,4 +197,38 @@ describe("FormRow", () => {
     );
   });
 
+  it("asks component about shifting focus", () => {
+    const canvas = new Canvas(45, 8);
+    const button = new FormButton(RichText.parse("OK"), () => null);
+    const box = new FormEditBox("hello", {
+      minWidth: 10, maxLength: 10, minHeight: 1, maxHeight: 1,
+      allowBlur: box => box.text == "hello"
+    });
+    const row = new FormRow([ box, button ]);
+    const form = new Form(
+      canvas.all(),
+      [ { component: row, label: "Gripes" } ],
+      { left: GridLayout.fixed(10) },
+    );
+
+    escpaint(canvas).should.eql(
+      `${CLEAR}[2;4H${WHITE}Gripes ` +
+      `${BLUE_BG}hello     ${RESET}  ` +
+      `${NORMAL}  OK  [13D`
+    );
+
+    form.feed(Key.normal(0, "p"));
+    escpaint(canvas).should.eql(`${FOCUS}p`);
+
+    form.feed(new Key(0, KeyType.Tab));
+    escpaint(canvas).should.eql(
+      `[6D${RED_BG}hellop    [4D`
+    );
+
+    form.feed(new Key(0, KeyType.Backspace));
+    form.feed(new Key(0, KeyType.Tab));
+    escpaint(canvas).should.eql(
+      `[6D${NORMAL}hello     ${RESET}  ${FOCUS}▶ OK ◀[4D`
+    );
+  });
 });
