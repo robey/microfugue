@@ -117,6 +117,12 @@ export class EditBox {
     this.redraw(true);
   }
 
+  attach(region: Region) {
+    this.region = region;
+    this.region.onResize(() => this.resize());
+    this.resize();
+  }
+
   clearHistory() {
     this.history = [];
     this.historyIndex = 0;

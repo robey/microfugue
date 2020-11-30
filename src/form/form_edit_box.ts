@@ -100,6 +100,12 @@ export class FormEditBox implements FormComponent {
       [ GridLayout.fixed(this.height) ]
     );
 
+    if (this.editBox) {
+      // just re-attach it to our new region
+      this.editBox.attach(region);
+      return;
+    }
+
     this.editBox = new EditBox(this.layout.layoutAt(0, 0), {
       color: this.focused ? this.config.focusTextColor : this.config.textColor,
       backgroundColor: this.focused ? this.config.focusColor : this.config.color,
