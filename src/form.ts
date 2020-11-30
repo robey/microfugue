@@ -122,13 +122,18 @@ export class Form {
   }
 
   resize() {
+    const cols = [ this.config.left, this.config.right ];
+
+    // only rebuild the layout if it doesn't exist, or we have a different number of fields now
+    if (!this.layout || this.layout.rowConstraints.length != this.fields.length + 1) {
     this.canvas.resize(this.canvas.cols, this.fields.length + 1);
 
-    // make a grid with 1-height rows first, then resize for real, once we know the column widths
-    const cols = [ this.config.left, this.config.right ];
+      // make a grid with 1-height rows first, then resize for real, once we
+      // know the column widths. the top grid row is vertical padding; the
+      // rest of the padding is the bottom line(s) of each component's region.
     const fakeRows = this.fields.map(_ => GridLayout.fixed(1));
-    // extra row for the top margin (if any)
     fakeRows.push(GridLayout.fixed(1));
+
     if (this.layout) this.layout.detach();
     this.layout = new GridLayout(this.canvas.all(), cols, fakeRows);
     this.labelRegions = this.fields.map((_, i) => this.layout.layout(0, i + 1, 1, i + 2));
@@ -138,8 +143,9 @@ export class Form {
       f.component.attach(region, this);
       this.regions.push(region);
     });
+    }
 
-    // top grid row is vertical padding; the rest of the padding is the last row of each component
+    // (re)compute the height of each component, and resize the canvas to match.
     const heights = this.fields.map((f, i) => {
       const h = f.component.computeHeight(this.regions[i].cols);
       // even if your height is 0, if you have a label, you've got 1 line
@@ -151,7 +157,6 @@ export class Form {
     this.canvas.resize(this.canvas.cols, height);
 
     this.layout.update(cols, heights.map(y => GridLayout.fixed(y)));
-
     this.redraw();
   }
 

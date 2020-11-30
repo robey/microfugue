@@ -130,7 +130,10 @@ export class FormEditBox implements FormComponent {
   }
 
   resizeHeight(lines: number) {
-    this.height = Math.min(this.config.maxHeight, Math.max(this.config.minHeight, lines));
+    const newHeight = Math.min(this.config.maxHeight, Math.max(this.config.minHeight, lines));
+    if (newHeight == this.height) return;
+
+    this.height = newHeight;
     setTimeout(() => {
       if (this.layout) this.layout.adjustRow(0, GridLayout.fixed(this.height));
       if (this.form) this.form.resize();
