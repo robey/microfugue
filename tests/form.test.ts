@@ -346,13 +346,13 @@ describe("Form", () => {
 
       escpaint(canvas).should.eql(
         `${CLEAR}[2;11H${GRAY}filler` +
-        `[4;11H${GRAY_BG} ✓ first   ` +
+        `[4;11H${GRAY_BG}   first   ` +
         `[2;11H`
       );
 
       form.feed(new Key(0, KeyType.Tab));
       escpaint(canvas).should.eql(
-        `[2B${PALE_BLUE}${BLUE_BG}▶${WHITE}✓ first  ${PALE_BLUE}◀[10D`
+        `[2B${PALE_BLUE}${BLUE_BG}▶${WHITE}  first  ${PALE_BLUE}◀[10D`
       );
     });
 
@@ -369,7 +369,7 @@ describe("Form", () => {
 
       escpaint(canvas).should.eql(
         `${CLEAR}[2;11H${GRAY}filler` +
-        `[4;11H${GRAY_BG} ✓ first   ` +
+        `[4;11H${GRAY_BG}   first   ` +
         `[6;11H[40mmoar filler` +
         `[2;11H`
       );
@@ -402,6 +402,35 @@ describe("Form", () => {
         `[2A ` +
         `[6;12H${WHITE}✓[D`
       );
+    });
+
+    it("keeps display on selected item", () => {
+      const canvas = new Canvas(30, 8);
+      const selector = new FormSelector(commonChoices, [ 0 ]);
+      const button = new FormButton(RichText.parse("OK"), () => null);
+
+      const form = new Form(
+        canvas.all(),
+        [ { component: selector }, { component: button } ],
+        { left: GridLayout.fixed(10), labelSpacing: 2 },
+      );
+
+      escpaint(canvas).should.eql(
+        `${CLEAR}[2;11H${PALE_BLUE}${BLUE_BG}▶${WHITE}  first  ${PALE_BLUE}◀` +
+        `[4;11H${NORMAL}  OK  ` +
+        `[2;12H`
+      );
+
+      // space, down, esc -- should revert to selected
+      form.feed(Key.normal(0, " "));
+      form.feed(new Key(0, KeyType.Down));
+      form.feed(new Key(0, KeyType.Esc));
+      escpaint(canvas).should.eql("");
+
+      form.feed(Key.normal(0, " "));
+      form.feed(new Key(0, KeyType.Down));
+      form.feed(new Key(0, KeyType.Tab));
+      escpaint(canvas).should.eql(`[D   first   [4;11H${FOCUS}▶ OK ◀[4D`);
     });
 
     it("multi-select", () => {

@@ -1,10 +1,11 @@
 import "should";
 import { Canvas, GridLayout, Key, KeyType } from "antsy";
-import { Form, FormButton, FormEditBox, FormRow, FormText, RichText } from "..";
+import { Form, FormButton, FormEditBox, FormRow, FormSelector, FormText, RichText } from "..";
 
 const RESET = `[37m[40m`;
 const CLEAR = RESET + `[2J[H`;
 const WHITE = `[38;5;15m`;
+const PALE_BLUE = `[38;5;39m`;
 const GRAY = `[38;5;246m`;
 const BLUE_BG = `[44m`;
 const GRAY_BG = `[48;5;236m`;
@@ -165,4 +166,34 @@ describe("FormRow", () => {
       `[2;27H`
     );
   });
+
+  it("redraw a selector after losing focus horizontally", () => {
+    const canvas = new Canvas(30, 8);
+    const choices = [ "first", "second", "third" ].map(s => RichText.parse(s));
+    const selector = new FormSelector(choices, [ 0 ]);
+    const button = new FormButton(RichText.parse("OK"), () => null);
+    const row = new FormRow([ selector, button ]);
+
+    const form = new Form(
+      canvas.all(),
+      [ { component: row } ],
+      { left: GridLayout.fixed(10), labelSpacing: 2 },
+    );
+
+    escpaint(canvas).should.eql(
+      `${CLEAR}[2;11H${PALE_BLUE}${BLUE_BG}▶${WHITE}  first  ${PALE_BLUE}◀` +
+      `[37m[40m  ` +
+      `${NORMAL}  OK  ` +
+      `[18D`
+    );
+
+    // space, then tab -- should clear out and focus the button
+    form.feed(Key.normal(0, " "));
+    form.feed(new Key(0, KeyType.Tab));
+
+    escpaint(canvas).should.eql(
+      `[D   first   [37m[40m  ${FOCUS}▶ OK ◀[4D`
+    );
+  });
+
 });

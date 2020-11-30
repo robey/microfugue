@@ -7,6 +7,12 @@ export interface FormSelectorConfig {
   // can multiple be selected?
   multiSelect: boolean;
 
+  // manual width instead of the width of the longest option?
+  width?: number;
+
+  // how much horizontal padding should there be around the selector?
+  horizontalPadding: number;
+
   colorAliases?: Map<string, string>;
 
   color: string;
@@ -14,9 +20,6 @@ export interface FormSelectorConfig {
   focusColor: string;
   focusTextColor: string;
   focusBadgeColor: string;
-
-  // how much horizontal padding should there be around the selector?
-  horizontalPadding: number;
 
   // customize everything
   focusBadgeLeft: string;
@@ -57,6 +60,9 @@ export class FormSelector implements FormComponent {
   display = 0;
   width = 0;
 
+  // id for each element
+  choiceIds?: number[];
+
   // for rendering the list when active:
   yOffset?: number;
 
@@ -69,15 +75,38 @@ export class FormSelector implements FormComponent {
     if (selected.length > 0) this.display = selected[0];
   }
 
+  static withIds(
+    choices: Map<number, RichText>,
+    selected: number[],
+    options: Partial<FormSelectorConfig> = {}
+  ): FormSelector {
+    const choiceIds = [...choices.keys()];
+    const rv = new FormSelector([...choices.values()], selected.map(s => choiceIds.indexOf(s)), options);
+    rv.choiceIds = choiceIds;
+    return rv;
+  }
+
   setChoices(choices: RichText[], selected: number[] = []) {
     this.choices = choices;
     this.selected = new Set(selected);
-    this.width = Math.max(...choices.map(s => s.length)) + 2 * this.config.horizontalPadding +
+    this.display = selected[0] ?? 0;
+    const choiceWidth = this.config.width !== undefined ? this.config.width : Math.max(...choices.map(s => s.length));
+    this.width = choiceWidth + 2 * this.config.horizontalPadding +
       this.config.selectedBadge.length +
       this.config.focusBadgeLeft.length +
       this.config.focusBadgeRight.length;
     this.constraint = GridLayout.fixed(this.width);
     this.draw();
+  }
+
+  setChoicesWithIds(choices: Map<number, RichText>, selected: number[] = []) {
+    const choiceIds = [...choices.keys()];
+    this.setChoices([...choices.values()], selected.map(s => choiceIds.indexOf(s)));
+    this.choiceIds = choiceIds;
+  }
+
+  selectedIds(): number[] {
+    return [...this.selected].map(i => (this.choiceIds ?? [])[i]);
   }
 
   setDisplay(n: number) {
@@ -91,7 +120,12 @@ export class FormSelector implements FormComponent {
 
   loseFocus(_direction: number) {
     this.focused = false;
+    this.dropActive();
+  }
+
+  private dropActive() {
     this.active = false;
+    this.display = [...this.selected][0] ?? 0;
   }
 
   computeHeight(_width: number): number {
@@ -131,11 +165,11 @@ export class FormSelector implements FormComponent {
     region.at(x, y).color(fg, bg).write(lpad("", this.width));
     region.at(x + this.config.focusBadgeLeft.length, y);
     if (focused) region.moveCursor();
-    region.write(
-      this.selected.has(index) && ((y > 0 && y < region.rows - 1) || !active) ?
-      this.config.selectedBadge :
-      this.config.unselectedBadge
-    );
+
+    // draw the selected badge if we're active or multi-select
+    const showBadge = this.selected.has(index) &&
+      (active ? (y > 0 && y < region.rows - 1) : this.config.multiSelect);
+    region.write(showBadge ? this.config.selectedBadge : this.config.unselectedBadge);
     region.move(this.config.horizontalPadding, 0);
 
     if (active && y == 0) {
@@ -181,10 +215,10 @@ export class FormSelector implements FormComponent {
           this.form?.redraw();
         } else if (key.type == KeyType.Return) {
           if (!this.config.multiSelect) this.select(this.display);
-          this.active = false;
+          this.dropActive();
           this.form?.redraw();
         } else if (key.type == KeyType.Esc) {
-          this.active = false;
+          this.dropActive();
           this.form?.redraw();
         }
       }
