@@ -182,6 +182,57 @@ describe("Form", () => {
     );
   });
 
+  it("remove", () => {
+    const canvas = new Canvas(30, 8);
+    const button1 = new FormButton(RichText.parse("OK"), () => null);
+    const button2 = new FormButton(RichText.parse("Delete"), () => form.remove(button1));
+    const form: Form = new Form(
+      canvas.all(),
+      [ { component: button1, label: "Done?" }, { component: button2, label: "Uh-oh" } ],
+      { left: GridLayout.fixed(10) },
+    );
+
+    escpaint(canvas).should.eql(
+      `${CLEAR}[2;5H${WHITE}Done? ${BLUE_BG}▶ OK ◀` +
+      `[4;5H${GRAY}[40mUh-oh ${GRAY_BG}  Delete  ` +
+      `[2;13H`
+    );
+
+    form.feed(new Key(0, KeyType.Tab));
+    form.feed(Key.normal(0, " "));
+    escpaint(canvas).should.eql(
+      `[8D${WHITE}[40mUh-oh ${BLUE_BG}▶ Delete ◀` +
+      `[4H${RESET}[K[2;13H`
+    );
+  });
+
+  it("insert", () => {
+    const canvas = new Canvas(30, 8);
+    const button1 = new FormButton(RichText.parse("OK"), () => {
+      form.insertBefore(button3, { component: button2 });
+    });
+    const button2 = new FormButton(RichText.parse("New!"), () => null);
+    const button3 = new FormButton(RichText.parse("Delete"), () => null);
+    const form: Form = new Form(
+      canvas.all(),
+      [ { component: button1, label: "Done?" }, { component: button3, label: "Uh-oh" } ],
+      { left: GridLayout.fixed(10) },
+    );
+
+    escpaint(canvas).should.eql(
+      `${CLEAR}[2;5H${WHITE}Done? ${BLUE_BG}▶ OK ◀` +
+      `[4;5H${GRAY}[40mUh-oh ${GRAY_BG}  Delete  ` +
+      `[2;13H`
+    );
+
+    form.feed(Key.normal(0, " "));
+    escpaint(canvas).should.eql(
+      `[4H${RESET}[K[10C${NORMAL}  New!  ` +
+      `[6;5H[40mUh-oh ${GRAY_BG}  Delete  ` +
+      `[2;13H`
+    );
+  });
+
 
   describe("edit box", () => {
     it("draws", () => {

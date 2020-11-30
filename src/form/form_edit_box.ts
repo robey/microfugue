@@ -55,6 +55,9 @@ export class FormEditBox implements FormComponent {
   height: number;
   isError = false;
 
+  // hook for when the selection is changed
+  onChanged?: () => void;
+
   constructor(private content: string, options: Partial<FormEditBoxConfig> = {}) {
     this.config = Object.assign({}, DEFAULT_EDIT_BOX_CONFIG, options);
     this.height = this.config.minHeight;
@@ -82,6 +85,7 @@ export class FormEditBox implements FormComponent {
         suggestionColor: this.config.dimColor,
         focused: false,
       });
+      this.onChanged?.();
     }
   }
 
@@ -102,7 +106,7 @@ export class FormEditBox implements FormComponent {
 
     if (this.editBox) {
       // just re-attach it to our new region
-      this.editBox.attach(region);
+      this.editBox.attach(this.layout.layoutAt(0, 0));
       return;
     }
 

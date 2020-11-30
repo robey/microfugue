@@ -92,12 +92,12 @@ export class Form {
   config: FormConfig;
   scrollView: ScrollView;
   canvas: Canvas;
-  layout: GridLayout;
+  layout!: GridLayout;
   focus = -1;
 
   // clip regions for each component (and optional label)
-  labelRegions: Region[];
-  regions: Region[];
+  labelRegions!: Region[];
+  regions!: Region[];
 
   // allow custom key bindings
   customBindings: [ Key, (key: Key, form: Form) => void ][] = [];
@@ -107,7 +107,6 @@ export class Form {
     this.config.scrollViewConfig = Object.assign({}, DEFAULT_CONFIG.scrollViewConfig, options.scrollViewConfig);
     this.scrollView = new ScrollView(region, this.config.scrollViewConfig);
     this.canvas = this.scrollView.content;
-    this.canvas.resize(this.canvas.cols, this.fields.length + 1);
 
     // find first focus-able component and give it focus.
     // if none are focus-able, force the first component to be "it".
@@ -119,11 +118,18 @@ export class Form {
     }
     this.fields[this.focus].component.takeFocus?.(1);
 
+    this.resize();
+  }
+
+  resize() {
+    this.canvas.resize(this.canvas.cols, this.fields.length + 1);
+
     // make a grid with 1-height rows first, then resize for real, once we know the column widths
     const cols = [ this.config.left, this.config.right ];
-    const fakeRows = fields.map(_ => GridLayout.fixed(1));
+    const fakeRows = this.fields.map(_ => GridLayout.fixed(1));
     // extra row for the top margin (if any)
     fakeRows.push(GridLayout.fixed(1));
+    if (this.layout) this.layout.detach();
     this.layout = new GridLayout(this.canvas.all(), cols, fakeRows);
     this.labelRegions = this.fields.map((_, i) => this.layout.layout(0, i + 1, 1, i + 2));
     this.regions = [];
@@ -132,10 +138,7 @@ export class Form {
       f.component.attach(region, this);
       this.regions.push(region);
     });
-    this.resize();
-  }
 
-  resize() {
     // top grid row is vertical padding; the rest of the padding is the last row of each component
     const heights = this.fields.map((f, i) => {
       const h = f.component.computeHeight(this.regions[i].cols);
@@ -147,7 +150,6 @@ export class Form {
     const height = heights.reduce((sum, b) => sum + b, 0);
     this.canvas.resize(this.canvas.cols, height);
 
-    const cols = [ this.config.left, this.config.right ];
     this.layout.update(cols, heights.map(y => GridLayout.fixed(y)));
 
     this.redraw();
@@ -267,5 +269,39 @@ export class Form {
     const index = this.customBindings.findIndex(([ k, _ ]) => k.equals(key));
     if (index >= 0) this.customBindings.splice(index, 1);
     this.customBindings.push([ key, f ]);
+  }
+
+  remove(component: FormComponent) {
+    const index = this.fields.findIndex(f => f.component === component);
+    if (index < 0) return;
+
+    if (this.focus == index) {
+      this.next();
+      if (this.focus == index) this.prev();
+      // it's possible this was the only focus-able component, in which case... good luck.
+    } else if (this.focus > index) {
+      this.focus--;
+    }
+    this.fields.splice(index, 1);
+    this.resize();
+  }
+
+  insert(index: number, field: FormField) {
+    if (index < 0 || index > this.fields.length) return;
+    this.fields.splice(index, 0, field);
+    if (this.focus >= index) this.focus++;
+    this.resize();
+  }
+
+  insertBefore(component: FormComponent, field: FormField) {
+    const index = this.fields.findIndex(f => f.component === component);
+    if (index < 0) return;
+    this.insert(index, field);
+  }
+
+  insertAfter(component: FormComponent, field: FormField) {
+    const index = this.fields.findIndex(f => f.component === component);
+    if (index < 0) return;
+    this.insert(index + 1, field);
   }
 }
