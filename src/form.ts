@@ -229,7 +229,7 @@ export class Form {
       const component = this.fields[this.focus].component;
       if (component.shiftFocus && component.shiftFocus(direction)) {
         this.fields[this.focus].component.draw();
-        this.ensureFocus();
+        this.redraw();
         return;
       }
     }
@@ -239,7 +239,6 @@ export class Form {
 
     if (this.focus >= 0 && this.focus < this.fields.length) {
       this.fields[this.focus].component.loseFocus?.(direction);
-      this.fields[this.focus].component.draw();
     }
 
     this.focus += direction;
@@ -250,7 +249,6 @@ export class Form {
     if (this.focus < 0 || this.focus >= this.fields.length) return this.shiftFocus(-direction);
 
     this.fields[this.focus].component.takeFocus?.(direction);
-    this.fields[this.focus].component.draw();
     this.redraw();
   }
 
