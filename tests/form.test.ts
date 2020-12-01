@@ -206,6 +206,29 @@ describe("Form", () => {
     );
   });
 
+  it("remove focused", () => {
+    const canvas = new Canvas(30, 8);
+    const button1: FormButton = new FormButton(RichText.parse("OK"), () => form.remove(button1));
+    const button2 = new FormButton(RichText.parse("Delete"), () => null);
+    const form: Form = new Form(
+      canvas.all(),
+      [ { component: button1, label: "Done?" }, { component: button2, label: "Uh-oh" } ],
+      { left: GridLayout.fixed(10) },
+    );
+
+    escpaint(canvas).should.eql(
+      `${CLEAR}[2;5H${WHITE}Done? ${BLUE_BG}▶ OK ◀` +
+      `[4;5H${GRAY}[40mUh-oh ${GRAY_BG}  Delete  ` +
+      `[2;13H`
+    );
+
+    form.feed(Key.normal(0, " "));
+    escpaint(canvas).should.eql(
+      `[8D${WHITE}[40mUh-oh ${BLUE_BG}▶ Delete ◀` +
+      `[4H${RESET}[K[2;13H`
+    );
+  });
+
   it("insert", () => {
     const canvas = new Canvas(30, 8);
     const button1 = new FormButton(RichText.parse("OK"), () => {

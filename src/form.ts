@@ -234,16 +234,19 @@ export class Form {
     this.scrollView.setCursor();
   }
 
-  private shiftFocus(direction: number): void {
+  private shiftFocus(direction: number, focusDeleted: boolean = false): void {
     // if it can stay within one component, let it.
-    if (this.focus >= 0 && this.focus < this.fields.length) {
+    if (!focusDeleted && this.focus >= 0 && this.focus < this.fields.length) {
       if (this.fields[this.focus].component.shiftFocus?.(direction)) return this.redraw();
     }
 
     // bail if nothing accepts focus.
-    if (!this.fields.some(f => f.component.acceptsFocus)) return;
+    if (!this.fields.some(f => f.component.acceptsFocus)) {
+      this.focus = 0;
+      return;
+    }
 
-    if (this.focus >= 0 && this.focus < this.fields.length) {
+    if (!focusDeleted && this.focus >= 0 && this.focus < this.fields.length) {
       this.fields[this.focus].component.loseFocus?.(direction);
     }
 
@@ -281,12 +284,10 @@ export class Form {
     if (index < 0) return;
 
     if (this.focus == index) {
-      this.next();
-      if (this.focus == index) this.prev();
-      // it's possible this was the only focus-able component, in which case... good luck.
-    } else if (this.focus > index) {
-      this.focus--;
+      // shift focus forward without calling loseFocus on this component (which is gone)
+      this.shiftFocus(1, true);
     }
+    if (this.focus > index) this.focus--;
     this.fields.splice(index, 1);
     this.resize();
   }
