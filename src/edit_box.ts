@@ -146,6 +146,7 @@ export class EditBox {
     this.saved = "";
     if (this.config.focused) this.moveCursor();
     this.setIdealHeight(1);
+    this.clearSuggestions();
     this.redraw(true);
   }
 
@@ -164,6 +165,11 @@ export class EditBox {
     if (textChanged) this.rebuildLines();
     if (this.config.focused && this.moveCursor(this.pos)) return;
     this._redraw();
+  }
+
+  setText(text: string) {
+    this.reset();
+    this.insert(text);
   }
 
   private _redraw() {
@@ -198,7 +204,7 @@ export class EditBox {
 
   // move the canvas cursor to `pos`, possibly shifting the part of the text that's visible.
   // returns true if it had to trigger a redraw.
-  moveCursor(pos: number = this.pos): boolean {
+  private moveCursor(pos: number = this.pos): boolean {
     this.pos = pos;
     const didRedraw = this.config.allowScroll && this.adjustVisible(pos);
     const [ vx, vy ] = this.positionToCursor(this.visiblePos);
@@ -311,6 +317,16 @@ export class EditBox {
     if (this.idealHeight == lines) return;
     this.idealHeight = lines;
     if (this.config.heightChangeRequest) setTimeout(() => this.config.heightChangeRequest?.(lines), 0);
+  }
+
+  // force a check for auto-complete suggestions, even if the user didn't hit TAB
+  checkForSuggestions() {
+    if (!this.autoComplete) return;
+    const suggestions = this.autoComplete(this.content());
+    if (suggestions === undefined || suggestions.length == 0) return;
+    this.suggestions = suggestions;
+    this.suggestionIndex = 0;
+    this.redraw(true);
   }
 
   content(): string {
