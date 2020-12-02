@@ -402,6 +402,37 @@ describe("Form", () => {
         `[4;11H${FOCUS}▶ OK ◀[4D`
       );
     });
+
+    it("shows suggestions", () => {
+      const suggestions = [ "raccoon", "rabbit" ];
+
+      const canvas = new Canvas(30, 8);
+      const autoComplete = (text: string) => suggestions.filter(s => s.startsWith(text)).map(s => s.slice(text.length));
+      const box: FormEditBox = new FormEditBox(
+        "",
+        { minHeight: 1, maxHeight: 1, minWidth: 10, maxLength: 10, alwaysSuggest: true, autoComplete },
+      );
+      const form = new Form(
+        canvas.all(),
+        [ { component: box, label: "Animal:" } ],
+        { left: GridLayout.fixed(10), labelSpacing: 2 },
+      );
+
+      escpaint(canvas).should.eql(
+        `${CLEAR}[2;2H${WHITE}Animal:  ` +
+        `${BLUE_BG}          [10D`
+      );
+
+      form.feed(Key.normal(0, "r"));
+      form.feed(Key.normal(0, "a"));
+      escpaint(canvas).should.eql(`ra${DIM}ccoon[5D`);
+
+      form.feed(Key.normal(0, "b"));
+      escpaint(canvas).should.eql(`${WHITE}b${DIM}bit${WHITE} [4D`);
+
+      form.feed(new Key(0, KeyType.Right));
+      escpaint(canvas).should.eql(`bit`);
+    });
   });
 
 

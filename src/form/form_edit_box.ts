@@ -1,4 +1,4 @@
-import { Constraint, GridLayout, Key, Region } from "antsy";
+import { Constraint, GridLayout, Key, KeyType, Region } from "antsy";
 import { EditBox } from "../edit_box";
 import { Form, FormComponent } from "../form";
 import { COLOR_COMPONENT, COLOR_COMPONENT_ERROR, COLOR_COMPONENT_FOCUS, COLOR_DIM, COLOR_DIM_FOCUS, COLOR_FG, COLOR_FG_FOCUS } from "./form_colors";
@@ -17,11 +17,25 @@ export interface FormEditBoxConfig {
   minHeight: number;
   maxHeight: number;
 
+  // sometimes it can be easier to specify a static width
+  oneLineWidth?: number;
+
   enterAction: "ignore" | "commit" | "insert";
   wordWrap: boolean;
   visibleLinefeed: boolean;
 
+  // return false to reject the current text and make the user change it
   allowBlur?: (box: FormEditBox) => boolean;
+
+  // check for auto-complete suggestions (and display one) on every keystroke?
+  autoComplete?: (text: string) => (string[] | undefined);
+  alwaysSuggest: boolean;
+
+  // called when we lose focus (if `allowBlur` returned true)
+  onBlur?: () => void;
+
+  // called when the content changes at all
+  onChange?: () => void;
 }
 
 const DEFAULT_EDIT_BOX_CONFIG: FormEditBoxConfig = {
@@ -41,6 +55,7 @@ const DEFAULT_EDIT_BOX_CONFIG: FormEditBoxConfig = {
   enterAction: "ignore",
   wordWrap: false,
   visibleLinefeed: false,
+  alwaysSuggest: false,
 };
 
 // simplest component: just text
@@ -55,11 +70,14 @@ export class FormEditBox implements FormComponent {
   height: number;
   isError = false;
 
-  // hook for when the selection is changed
-  onChanged?: () => void;
-
   constructor(private content: string, options: Partial<FormEditBoxConfig> = {}) {
     this.config = Object.assign({}, DEFAULT_EDIT_BOX_CONFIG, options);
+    if (options.oneLineWidth !== undefined) {
+      this.config.minHeight = 1;
+      this.config.maxHeight = 1;
+      this.config.minWidth = options.oneLineWidth;
+      this.config.maxLength = options.oneLineWidth;
+    }
     this.height = this.config.minHeight;
     this.constraint = GridLayout.stretchWithMinMax(1, this.config.minWidth, this.config.maxLength);
   }
@@ -85,7 +103,9 @@ export class FormEditBox implements FormComponent {
         suggestionColor: this.config.dimColor,
         focused: false,
       });
-      this.onChanged?.();
+      this.editBox.clearSuggestions();
+      this.config.onChange?.();
+      this.config.onBlur?.();
     }
   }
 
@@ -122,6 +142,7 @@ export class FormEditBox implements FormComponent {
       visibleLinefeed: this.config.visibleLinefeed,
       focused: this.focused,
     });
+    if (this.config.autoComplete) this.editBox.autoComplete = this.config.autoComplete;
     if (this.content) this.editBox.insert(this.content);
   }
 
@@ -145,17 +166,29 @@ export class FormEditBox implements FormComponent {
       this.editBox?.reconfigure({ backgroundColor: this.config.color });
       this.isError = false;
     }
-    if (this.editBox) this.editBox.feed(key);
+    this.editBox?.feed(key);
+    if (this.config.alwaysSuggest) this.editBox?.checkForSuggestions();
+    this.config.onChange?.();
   }
 
   get text(): string {
     return this.editBox?.text ?? this.content;
   }
 
+  setText(text: string) {
+    this.editBox?.setText(text);
+  }
+
   // return true to remain focused
   shiftFocus(_direction: number): boolean {
     if (!this.config.allowBlur) return false;
     if (this.config.allowBlur(this)) return false;
+    if (this.editBox?.suggestionIndex !== undefined) {
+      // accept the current suggestion
+      this.editBox.feed(new Key(0, KeyType.Right));
+      if (this.config.allowBlur(this)) return false;
+    }
+
     this.isError = true;
     this.editBox?.reconfigure({ backgroundColor: this.config.errorColor });
     return true;
