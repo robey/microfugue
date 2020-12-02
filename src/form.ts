@@ -102,6 +102,9 @@ export class Form {
   // allow custom key bindings
   customBindings: [ Key, (key: Key, form: Form) => void ][] = [];
 
+  // track if a rebuild happens during focus change
+  rebuildCount = 0;
+
   constructor(public region: Region, public fields: FormField[], options: Partial<FormConfig> = {}) {
     this.config = Object.assign({}, DEFAULT_CONFIG, options);
     this.config.scrollViewConfig = Object.assign({}, DEFAULT_CONFIG.scrollViewConfig, options.scrollViewConfig);
@@ -126,23 +129,23 @@ export class Form {
 
     // only rebuild the layout if it doesn't exist, or we have a different number of fields now
     if (!this.layout || this.layout.rowConstraints.length != this.fields.length + 1) {
-    this.canvas.resize(this.canvas.cols, this.fields.length + 1);
+      this.canvas.resize(this.canvas.cols, this.fields.length + 1);
 
       // make a grid with 1-height rows first, then resize for real, once we
       // know the column widths. the top grid row is vertical padding; the
       // rest of the padding is the bottom line(s) of each component's region.
-    const fakeRows = this.fields.map(_ => GridLayout.fixed(1));
-    fakeRows.push(GridLayout.fixed(1));
+      const fakeRows = this.fields.map(_ => GridLayout.fixed(1));
+      fakeRows.push(GridLayout.fixed(1));
 
-    if (this.layout) this.layout.detach();
-    this.layout = new GridLayout(this.canvas.all(), cols, fakeRows);
-    this.labelRegions = this.fields.map((_, i) => this.layout.layout(0, i + 1, 1, i + 2));
-    this.regions = [];
-    this.fields.forEach((f, i) => {
-      const region = this.layout.layout(f.fullWidth ? 0 : 1, i + 1, 2, i + 2);
-      f.component.attach(region, this);
-      this.regions.push(region);
-    });
+      if (this.layout) this.layout.detach();
+      this.layout = new GridLayout(this.canvas.all(), cols, fakeRows);
+      this.labelRegions = this.fields.map((_, i) => this.layout.layout(0, i + 1, 1, i + 2));
+      this.regions = [];
+      this.fields.forEach((f, i) => {
+        const region = this.layout.layout(f.fullWidth ? 0 : 1, i + 1, 2, i + 2);
+        f.component.attach(region, this);
+        this.regions.push(region);
+      });
     }
 
     // (re)compute the height of each component, and resize the canvas to match.
@@ -237,7 +240,10 @@ export class Form {
   private shiftFocus(direction: number, focusDeleted: boolean = false): void {
     // if it can stay within one component, let it.
     if (!focusDeleted && this.focus >= 0 && this.focus < this.fields.length) {
+      const oldCount = this.rebuildCount;
       if (this.fields[this.focus].component.shiftFocus?.(direction)) return this.redraw();
+      // did they mess with the component list when they lost focus? don't try to shift then...
+      if (oldCount != this.rebuildCount) return this.redraw();
     }
 
     // bail if nothing accepts focus.
@@ -246,9 +252,12 @@ export class Form {
       return;
     }
 
+    const oldCount = this.rebuildCount;
     if (!focusDeleted && this.focus >= 0 && this.focus < this.fields.length) {
       this.fields[this.focus].component.loseFocus?.(direction);
     }
+    // did they mess with the component list when they lost focus? don't try to shift then...
+    if (oldCount != this.rebuildCount) return this.redraw();
 
     this.focus += direction;
     while (this.focus >= 0 && this.focus < this.fields.length && !this.fields[this.focus].component.acceptsFocus) {
@@ -258,6 +267,15 @@ export class Form {
     if (this.focus < 0 || this.focus >= this.fields.length) return this.shiftFocus(-direction);
 
     this.fields[this.focus].component.takeFocus?.(direction);
+    this.redraw();
+  }
+
+  moveFocus(component: FormComponent) {
+    const index = this.fields.findIndex(f => f.component === component);
+    if (index < 0) return;
+    this.fields[this.focus].component.loseFocus?.(index > this.focus ? 1 : -1);
+    this.fields[index].component.takeFocus?.(index > this.focus ? 1 : -1);
+    this.focus = index;
     this.redraw();
   }
 
@@ -283,6 +301,7 @@ export class Form {
     const index = this.fields.findIndex(f => f.component === component);
     if (index < 0) return;
 
+    this.rebuildCount++;
     if (this.focus == index) {
       // shift focus forward without calling loseFocus on this component (which is gone)
       this.shiftFocus(1, true);
@@ -294,6 +313,7 @@ export class Form {
 
   insert(index: number, field: FormField) {
     if (index < 0 || index > this.fields.length) return;
+    this.rebuildCount++;
     this.fields.splice(index, 0, field);
     if (this.focus >= index) this.focus++;
     this.resize();
