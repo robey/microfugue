@@ -1,7 +1,7 @@
 import { Constraint, GridLayout, Region } from "antsy";
 import { Form, FormComponent } from "../form";
 import { RichText } from "../rich_text";
-import { COLOR_FG } from "./form_colors";
+import { COLOR_BG, COLOR_FG } from "./form_colors";
 
 export interface FormTextConfig {
   colorAliases?: Map<string, string>;
@@ -22,9 +22,10 @@ const DEFAULT_TEXT_CONFIG: FormTextConfig = {
 export class FormText implements FormComponent {
   config: FormTextConfig;
   region?: Region;
+  form?: Form;
   focused = false;
 
-  constructor(public text: RichText, options: Partial<FormTextConfig> = {}) {
+  constructor(private text: RichText, options: Partial<FormTextConfig> = {}) {
     this.config = Object.assign({}, DEFAULT_TEXT_CONFIG, options);
   }
 
@@ -48,12 +49,14 @@ export class FormText implements FormComponent {
     return this.text.wrap(width - 1, this.config.wordWrap).length;
   }
 
-  attach(region: Region, _form: Form) {
+  attach(region: Region, form: Form) {
     this.region = region;
+    this.form = form;
   }
 
   draw() {
     if (!this.region) return;
+    this.region.backgroundColor(this.form?.config.labelBackground ?? COLOR_BG);
     this.text.wrap(this.region.cols - 1, this.config.wordWrap).forEach((line, i) => {
       if (!this.region) return;
       this.region.at(0, i).clearToEndOfLine();
@@ -61,5 +64,10 @@ export class FormText implements FormComponent {
     });
     // why would you focus a text line?
     if (this.focused) this.region.moveCursor(0, 0);
+  }
+
+  setText(t: RichText) {
+    this.text = t;
+    this.form?.resize();
   }
 }

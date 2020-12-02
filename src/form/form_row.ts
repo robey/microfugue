@@ -53,6 +53,7 @@ export class FormRow implements FormComponent {
 
   // move focus between buttons
   shiftFocus(direction: number): boolean {
+    if (this.focus < 0) return false;
     if (this.components[this.focus].shiftFocus?.(direction)) return true;
 
     this.components[this.focus].loseFocus?.(direction);
