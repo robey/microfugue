@@ -242,7 +242,7 @@ export class Form {
     if (!focusDeleted && this.focus >= 0 && this.focus < this.fields.length) {
       const oldCount = this.rebuildCount;
       if (this.fields[this.focus].component.shiftFocus?.(direction)) return this.redraw();
-      // did they mess with the component list when they lost focus? don't try to shift then...
+      // did they mess with the component list or focus when they lost focus? don't try to shift then...
       if (oldCount != this.rebuildCount) return this.redraw();
     }
 
@@ -256,7 +256,7 @@ export class Form {
     if (!focusDeleted && this.focus >= 0 && this.focus < this.fields.length) {
       this.fields[this.focus].component.loseFocus?.(direction);
     }
-    // did they mess with the component list when they lost focus? don't try to shift then...
+    // did they mess with the component list or focus when they lost focus? don't try to shift then...
     if (oldCount != this.rebuildCount) return this.redraw();
 
     this.focus += direction;
@@ -276,6 +276,7 @@ export class Form {
     this.fields[this.focus].component.loseFocus?.(index > this.focus ? 1 : -1);
     this.fields[index].component.takeFocus?.(index > this.focus ? 1 : -1);
     this.focus = index;
+    this.rebuildCount++;
     this.redraw();
   }
 
