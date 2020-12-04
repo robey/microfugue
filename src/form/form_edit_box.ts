@@ -25,17 +25,17 @@ export interface FormEditBoxConfig {
   visibleLinefeed: boolean;
 
   // return false to reject the current text and make the user change it
-  allowBlur?: (box: FormEditBox) => boolean;
+  allowBlur?: (box: FormEditBox, form: Form) => boolean;
 
   // check for auto-complete suggestions (and display one) on every keystroke?
   autoComplete?: (text: string) => (string[] | undefined);
   alwaysSuggest: boolean;
 
   // called when we lose focus (if `allowBlur` returned true)
-  onBlur?: () => void;
+  onBlur?: (box: FormEditBox, form: Form) => void;
 
   // called when the content changes at all
-  onChange?: () => void;
+  onChange?: (box: FormEditBox, form: Form) => void;
 }
 
 const DEFAULT_EDIT_BOX_CONFIG: FormEditBoxConfig = {
@@ -95,6 +95,7 @@ export class FormEditBox implements FormComponent {
   }
 
   loseFocus(_direction: number) {
+    if (!this.form) return;
     this.focused = false;
     if (this.editBox) {
       this.editBox.reconfigure({
@@ -104,8 +105,8 @@ export class FormEditBox implements FormComponent {
         focused: false,
       });
       this.editBox.clearSuggestions();
-      this.config.onChange?.();
-      this.config.onBlur?.();
+      this.config.onChange?.(this, this.form);
+      this.config.onBlur?.(this, this.form);
     }
   }
 
@@ -162,13 +163,14 @@ export class FormEditBox implements FormComponent {
   }
 
   feed(key: Key) {
+    if (!this.form) return;
     if (this.isError) {
       this.editBox?.reconfigure({ backgroundColor: this.config.color });
       this.isError = false;
     }
     this.editBox?.feed(key);
     if (this.config.alwaysSuggest) this.editBox?.checkForSuggestions();
-    this.config.onChange?.();
+    this.config.onChange?.(this, this.form);
   }
 
   get text(): string {
@@ -181,12 +183,13 @@ export class FormEditBox implements FormComponent {
 
   // return true to remain focused
   shiftFocus(_direction: number): boolean {
+    if (!this.form) return false;
     if (!this.config.allowBlur) return false;
-    if (this.config.allowBlur(this)) return false;
+    if (this.config.allowBlur(this, this.form)) return false;
     if (this.editBox?.suggestionIndex !== undefined) {
       // accept the current suggestion
       this.editBox.feed(new Key(0, KeyType.Right));
-      if (this.config.allowBlur(this)) return false;
+      if (this.config.allowBlur(this, this.form)) return false;
     }
 
     this.isError = true;

@@ -13,6 +13,11 @@ export interface FormSelectorConfig {
   // how much horizontal padding should there be around the selector?
   horizontalPadding: number;
 
+  // hook for when the selection is changed
+  onChanged?: (selector: FormSelector, form: Form) => void;
+  // hook for when we lose focus
+  onBlur?: (selector: FormSelector, form: Form) => void;
+
   colorAliases?: Map<string, string>;
 
   color: string;
@@ -66,9 +71,6 @@ export class FormSelector implements FormComponent {
   // for rendering the list when active:
   yOffset?: number;
 
-  // hook for when the selection is changed
-  onChanged?: () => void;
-
   constructor(public choices: RichText[], selected: number[], options: Partial<FormSelectorConfig> = {}) {
     this.config = Object.assign({}, DEFAULT_TEXT_CONFIG, options);
     this.setChoices(choices, selected);
@@ -119,8 +121,10 @@ export class FormSelector implements FormComponent {
   }
 
   loseFocus(_direction: number) {
+    if (!this.form) return;
     this.focused = false;
     this.dropActive();
+    this.config.onBlur?.(this, this.form);
   }
 
   private dropActive() {
@@ -188,6 +192,7 @@ export class FormSelector implements FormComponent {
   }
 
   private select(index: number) {
+    if (!this.form) return;
     if (this.config.multiSelect) {
       if (this.selected.has(index)) {
         this.selected.delete(index);
@@ -198,7 +203,7 @@ export class FormSelector implements FormComponent {
       this.selected.clear();
       this.selected.add(index);
     }
-    if (this.onChanged) this.onChanged();
+    this.config.onChanged?.(this, this.form);
   }
 
   feed(key: Key) {

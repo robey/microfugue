@@ -38,10 +38,11 @@ export class FormButton implements FormComponent {
   config: FormButtonConfig;
   constraint: Constraint;
   region?: Region;
+  form?: Form;
   focused = false;
   width: number;
 
-  constructor(public text: RichText, public onClick: () => void, options: Partial<FormButtonConfig> = {}) {
+  constructor(public text: RichText, public onClick: (form: Form) => void, options: Partial<FormButtonConfig> = {}) {
     this.config = Object.assign({}, DEFAULT_TEXT_CONFIG, options);
     this.width = text.length + this.config.horizontalPadding * 2 +
       this.config.focusBadgeLeft.length + this.config.focusBadgeRight.length;
@@ -60,8 +61,9 @@ export class FormButton implements FormComponent {
     return this.config.verticalPadding * 2 + 1;
   }
 
-  attach(region: Region, _form: Form) {
+  attach(region: Region, form: Form) {
     this.region = region;
+    this.form = form;
   }
 
   draw() {
@@ -85,8 +87,9 @@ export class FormButton implements FormComponent {
   }
 
   feed(key: Key) {
+    if (!this.form) return;  // impossible
     if (key.modifiers == 0 && (key.type == KeyType.Return || key.key == " ")) {
-      this.onClick();
+      this.onClick(this.form);
     }
   }
 }
