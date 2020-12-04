@@ -2,7 +2,9 @@ export { EditBox } from "./edit_box";
 export {
   Form,
   FormButton, FormButtonConfig,
+  FormComponent,
   FormEditBox, FormEditBoxConfig,
+  FormField,
   FormRow, FormRowConfig,
   FormSelector, FormSelectorConfig,
   FormText, FormTextConfig,
