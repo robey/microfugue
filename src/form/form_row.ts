@@ -21,6 +21,7 @@ export class FormRow implements FormComponent {
   region?: Region;
   form?: Form;
   focus = -1;
+  refocusing = false;
 
   // layout
   rows: FormComponent[][] = [];
@@ -37,6 +38,7 @@ export class FormRow implements FormComponent {
   }
 
   takeFocus(direction: number) {
+    if (this.refocusing) return;
     this.focus = direction > 0 ? 0 : this.components.length - 1;
     while (this.focus >= 0 && this.focus < this.components.length && !this.components[this.focus].acceptsFocus) {
       this.focus += direction;
@@ -47,6 +49,7 @@ export class FormRow implements FormComponent {
   }
 
   loseFocus(direction: number) {
+    if (this.refocusing) return;
     if (this.focus >= 0) this.components[this.focus].loseFocus?.(direction);
     this.focus = -1;
   }
@@ -68,6 +71,20 @@ export class FormRow implements FormComponent {
       this.focus = -1;
       return false;
     }
+  }
+
+  moveFocus(component: FormComponent) {
+    // tell the form we're the new focus! (ignore focus callbacks while they do it)
+    this.refocusing = true;
+    this.form?.moveFocus(this);
+    this.refocusing = false;
+
+    const index = this.components.indexOf(component);
+    if (index < 0) return;
+    if (this.focus >= 0) this.components[this.focus].loseFocus?.(index > this.focus ? 1 : -1);
+    this.components[index].takeFocus?.(this.focus < 0 || index > this.focus ? 1 : -1);
+    this.focus = index;
+    this.form?.redraw();
   }
 
   attach(region: Region, form: Form) {

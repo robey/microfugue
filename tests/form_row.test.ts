@@ -231,4 +231,36 @@ describe("FormRow", () => {
       `[6D${NORMAL}hello     ${RESET}  ${FOCUS}▶ OK ◀[4D`
     );
   });
+
+  it("move focus into the middle of a row", () => {
+    const canvas = new Canvas(45, 8);
+    const button1 = new FormButton(RichText.parse("What?"), () => null);
+    const button2 = new FormButton(RichText.parse("OK"), () => null);
+    const box = new FormEditBox("hello", {
+      minWidth: 10, maxLength: 10, minHeight: 1, maxHeight: 1,
+      allowBlur: box => box.text == "hello"
+    });
+    const row = new FormRow([ box, button2 ]);
+    const form = new Form(
+      canvas.all(),
+      [ { component: button1 }, { component: row, label: "Gripes" } ],
+      { left: GridLayout.fixed(10) },
+    );
+
+    escpaint(canvas).should.eql(
+      `${CLEAR}[2;11H${FOCUS}▶ What? ◀` +
+      `[4;4H${GRAY}[40mGripes ` +
+      `${GRAY_BG}hello     ${RESET}  ` +
+      `${NORMAL}  OK  [2;13H`
+    );
+
+    row.moveFocus(button2);
+    console.log(canvas.paintInline());
+    escpaint(canvas).should.eql(
+      `[2D  What?  ` +
+      `[4;4H${WHITE}[40mGripes` +
+      `[13C${BLUE_BG}▶ OK ◀` +
+      `[4D`
+    );
+  });
 });
