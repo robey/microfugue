@@ -85,7 +85,6 @@ export class ScrollView {
     this.drawScrollBar();
     const y = Math.max(this.frame.rows - this.content.rows, 0);
     if (y > 0 && this.config.gravityIsTop) {
-      this.frameTop = -y;
       this.frame.at(0, 0).draw(this.content.clip(0, 0, this.frame.cols, this.frameBottom));
     } else {
       this.frame.at(0, y).draw(this.content.clip(0, this.frameTop, this.frame.cols, this.frameBottom));

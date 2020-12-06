@@ -126,6 +126,7 @@ export class Form {
 
   resize() {
     const cols = [ this.config.left, this.config.right ];
+    const fresh = !this.layout;
 
     // only rebuild the layout if it doesn't exist, or we have a different number of fields now
     if (!this.layout || this.layout.rowConstraints.length != this.fields.length + 1) {
@@ -158,6 +159,9 @@ export class Form {
     heights.unshift(this.config.verticalPadding);
     const height = heights.reduce((sum, b) => sum + b, 0);
     this.canvas.resize(this.canvas.cols, height);
+
+    // always start at the top
+    if (fresh) this.scrollView.scrollUp(this.canvas.rows);
 
     this.layout.update(cols, heights.map(y => GridLayout.fixed(y)));
     this.redraw();
@@ -221,7 +225,7 @@ export class Form {
   // keep focus on screen
   private ensureFocus() {
     const top = this.regions[this.focus].y1;
-    const bottom = this.regions[this.focus].y2;
+    const bottom = this.regions[this.focus].y2 - this.config.verticalPadding;
     if (this.scrollView.frameTop > top) {
       this.scrollView.scrollUp(this.scrollView.frameTop - top);
     } else if (this.scrollView.frameBottom < bottom) {
@@ -231,7 +235,7 @@ export class Form {
 
     const [ _cx, cy ] = this.canvas.cursor;
     if (this.scrollView.frameTop > cy - 1) this.scrollView.scrollUp(this.scrollView.frameTop - cy + 1);
-    if (this.scrollView.frameBottom < cy + 2) this.scrollView.scrollDown(this.scrollView.frameBottom - cy + 2);
+    if (this.scrollView.frameBottom < cy + 2) this.scrollView.scrollDown(cy + 2 - this.scrollView.frameBottom);
 
     this.scrollView.redraw();
     this.scrollView.setCursor();

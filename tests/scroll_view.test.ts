@@ -52,8 +52,8 @@ describe("ScrollView", () => {
     sv.redraw();
 
     // everything should be on display, and no scrollbar
-    sv.frameTop.should.eql(-9);
-    sv.frameBottom.should.eql(1);
+    sv.frameTop.should.eql(0);
+    sv.frameBottom.should.eql(10);
     escpaint(canvas).should.eql("[37m[40m[2J[H[38;5;15mhello[5D");
   });
 

@@ -626,16 +626,16 @@ describe("Form", () => {
       );
 
       escpaint(canvas).should.eql(
-        `${CLEAR}[29C${DIM}│` +
-        `[2;11H${PALE_BLUE}${BLUE_BG}▶${WHITE}✓ first  ${PALE_BLUE}◀[8C${DIM}[40m█` +
-        `[3;30H█` +
-        `[4;11H${GRAY}moar filler down [37m  ${DIM}│` +
-        `[2;12H`
+        `${CLEAR}[10C${GRAY}filler[13C${DIM}│` +
+        `[2;30H█` +
+        `[3;11H${PALE_BLUE}${BLUE_BG}▶${WHITE}✓ first  ${PALE_BLUE}◀[8C${DIM}[40m█` +
+        `[4;30H│` +
+        `[3;12H`
       );
 
       form.feed(Key.normal(0, " "));
       escpaint(canvas).should.eql(
-        `[3;11H${PALE_BLUE}${BLUE_BG}   second  [4;11H   third   [2;12H`
+        `[4;11H${PALE_BLUE}${BLUE_BG}   second  [3;12H`
       );
 
       form.feed(new Key(0, KeyType.Down));
@@ -644,8 +644,8 @@ describe("Form", () => {
       escpaint(canvas).should.eql(
         `[1;11H   second  ` +
         `[2;11H   third   ${GRAY}[40m down   ${DIM}│` +
-        `[3;11H${PALE_BLUE}${BLUE_BG}▶${WHITE}  fourth ${PALE_BLUE}◀` +
-        `[4;14H…    [3C${GRAY}[40m[K[8C${DIM}█` +
+        `[3;12H${WHITE}${BLUE_BG}  fourth` +
+        `[4;14H${PALE_BLUE}…     [10C${DIM}[40m█` +
         `[3;12H`
       );
 
