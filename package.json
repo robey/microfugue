@@ -1,6 +1,6 @@
 {
   "name": "microfugue",
-  "version": "0.8.3",
+  "version": "0.8.4",
   "description": "a small library for creating UX elements in ansi-compatible terminals",
   "keywords": [
     "antsy",
