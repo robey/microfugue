@@ -27,7 +27,7 @@
     "test": "npm run build && mocha -r ts-node/register tests/**/*.test.ts"
   },
   "dependencies": {
-    "antsy": "^2.5.0",
+    "antsy": "^2.6.0",
     "ballvalve": "^3.1.2"
   },
   "devDependencies": {
