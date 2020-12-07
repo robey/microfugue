@@ -255,12 +255,40 @@ describe("FormRow", () => {
     );
 
     row.moveFocus(button2);
-    console.log(canvas.paintInline());
     escpaint(canvas).should.eql(
       `[2D  What?  ` +
       `[4;4H${WHITE}[40mGripes` +
       `[13C${BLUE_BG}▶ OK ◀` +
       `[4D`
+    );
+  });
+
+  it("doesn't have to take focus", () => {
+    const canvas = new Canvas(45, 8);
+    const button1 = new FormButton(RichText.parse("Ignore"), () => null);
+    const button2 = new FormButton(RichText.parse("Fail"), () => null);
+    const text1 = new FormText(RichText.string("default", "text1"), { acceptsFocus: true });
+    const text2 = new FormText(RichText.string("default", "text2"));
+    const row = new FormRow([ text1, text2 ]);
+    const form = new Form(
+      canvas.all(),
+      [ { component: button1 }, { component: row }, { component: button2 } ],
+      { left: GridLayout.fixed(10) },
+    );
+
+    escpaint(canvas).should.eql(
+      `${CLEAR}[2;11H${FOCUS}▶ Ignore ◀` +
+      `[4;11H${GRAY}[40mtext1[13Ctext2` +
+      `[6;11H${GRAY_BG}  Fail  ` +
+      `[2;13H`
+    );
+
+    text1.disable();
+    form.feed(new Key(0, KeyType.Tab));
+    escpaint(canvas).should.eql(
+      `[2D  Ignore  ` +
+      `[6;11H${FOCUS}▶ Fail ◀` +
+      `[6D`
     );
   });
 });

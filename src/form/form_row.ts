@@ -16,7 +16,6 @@ const DEFAULT_ROW_CONFIG: FormRowConfig = {
 
 // row of small components
 export class FormRow implements FormComponent {
-  acceptsFocus = true;
   config: FormRowConfig;
   region?: Region;
   form?: Form;
@@ -30,11 +29,14 @@ export class FormRow implements FormComponent {
 
   constructor(public components: FormComponent[], options: Partial<FormRowConfig> = {}) {
     this.config = Object.assign({}, DEFAULT_ROW_CONFIG, options);
-    if (this.components.every(c => !c.acceptsFocus)) this.acceptsFocus = false;
   }
 
-  get constraint() {
+  get constraint(): Constraint {
     return this.config.constraint;
+  }
+
+  get acceptsFocus(): boolean {
+    return this.components.some(c => c.acceptsFocus);
   }
 
   takeFocus(direction: number) {

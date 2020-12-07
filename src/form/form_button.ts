@@ -49,6 +49,14 @@ export class FormButton implements FormComponent {
     this.constraint = GridLayout.fixed(this.width);
   }
 
+  disable() {
+    this.acceptsFocus = false;
+  }
+
+  enable() {
+    this.acceptsFocus = true;
+  }
+
   takeFocus(_direction: number) {
     this.focused = true;
   }

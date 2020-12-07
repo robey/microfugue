@@ -33,6 +33,14 @@ export class FormText implements FormComponent {
     return this.config.acceptsFocus;
   }
 
+  enable() {
+    this.config.acceptsFocus = true;
+  }
+
+  disable() {
+    this.config.acceptsFocus = false;
+  }
+
   takeFocus(_direction: number) {
     this.focused = true;
   }
