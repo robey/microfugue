@@ -358,6 +358,28 @@ describe("EditBox", () => {
     escpaint(canvas).should.eql(`[H[K[B[K[B   [H`);
   });
 
+  it("scrolls up when bottom line is blank", async () => {
+    const canvas = new Canvas(20, 3);
+    const box = new EditBox(canvas.all(), {
+      color: "white", allowScroll: true, enterAction: "insert", useHistory: false,
+    });
+
+    for (const ch of "hello") box.feed(Key.normal(0, ch));
+    box.feed(new Key(0, KeyType.Return));
+    box.feed(new Key(0, KeyType.Return));
+    for (const ch of "third") box.feed(Key.normal(0, ch));
+    box.feed(new Key(0, KeyType.Return));
+    box.feed(new Key(0, KeyType.Return));
+    await delay(10);
+    escpaint(canvas).should.eql(`${WHITE}[40m[2J[H${DIM}…${WHITE}hird${DIM}↲[2H↲[3H`);
+
+    box.feed(new Key(0, KeyType.Backspace));
+    escpaint(canvas).should.eql(`${WHITE}[2J[H${DIM}…[2H${WHITE}third${DIM}↲[3H`);
+
+    box.feed(new Key(0, KeyType.Backspace));
+    escpaint(canvas).should.eql(`${WHITE}[2J[Hhello${DIM}↲[2H↲[3H${WHITE}third`);
+  });
+
   describe("word wrap", () => {
     const commonOptions: Partial<EditBoxConfig> = {
       color: "white", enterAction: "insert", wordWrap: true, useHistory: false, visibleLinefeed: false,
@@ -481,8 +503,6 @@ describe("EditBox", () => {
       box.feed(new Key(0, KeyType.Up));
       escpaint(canvas).should.eql(`[2J[Hthis house is[2Hincredible[3Hlook out!${DIM} …[2H`);
     });
-
-    // vertical scroll shows "..." at the wrong place on the bottom when using linefeeds
   });
 
   describe("suggestions", () => {

@@ -233,7 +233,9 @@ export class EditBox {
         vx = 0;
       }
 
-      while (pos <= this.visiblePos && this.visiblePos > 0) {
+      // is the current position off-screen above us, OR is the last line
+      // blank while there are hidden lines above? scroll up!
+      while ((pos <= this.visiblePos || this.region.rows + vy > this.lines.length) && this.visiblePos > 0) {
         vy--;
         this.visiblePos -= this.lines[vy].length;
       }
