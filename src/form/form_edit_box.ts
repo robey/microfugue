@@ -165,7 +165,7 @@ export class FormEditBox implements FormComponent {
   feed(key: Key) {
     if (!this.form) return;
     if (this.isError) {
-      this.editBox?.reconfigure({ backgroundColor: this.config.color });
+      this.editBox?.reconfigure({ backgroundColor: this.focused ? this.config.focusColor : this.config.color });
       this.isError = false;
     }
     this.editBox?.feed(key);
