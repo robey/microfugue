@@ -71,6 +71,9 @@ export class FormSelector implements FormComponent {
   // for rendering the list when active:
   yOffset?: number;
 
+  // type-ahead selection:
+  typeAhead = "";
+
   constructor(public choices: RichText[], selected: number[], options: Partial<FormSelectorConfig> = {}) {
     this.config = Object.assign({}, DEFAULT_TEXT_CONFIG, options);
     this.setChoices(choices, selected);
@@ -98,6 +101,7 @@ export class FormSelector implements FormComponent {
       this.config.focusBadgeLeft.length +
       this.config.focusBadgeRight.length;
     this.constraint = GridLayout.fixed(this.width);
+    this.typeAhead = "";
     this.draw();
   }
 
@@ -113,6 +117,7 @@ export class FormSelector implements FormComponent {
 
   setDisplay(n: number) {
     this.display = n;
+    this.typeAhead = "";
     this.draw();
   }
 
@@ -130,6 +135,7 @@ export class FormSelector implements FormComponent {
   private dropActive() {
     this.active = false;
     this.display = [...this.selected][0] ?? 0;
+    this.typeAhead = "";
   }
 
   computeHeight(_width: number): number {
@@ -203,6 +209,7 @@ export class FormSelector implements FormComponent {
       this.selected.clear();
       this.selected.add(index);
     }
+    this.typeAhead = "";
     this.config.onChanged?.(this, this.form);
   }
 
@@ -230,6 +237,9 @@ export class FormSelector implements FormComponent {
           this.dropActive();
           this.form?.redraw();
           return true;
+        } else if (key.type == KeyType.Normal) {
+          this.checkTypeAhead(key.key);
+          return true;
         }
       }
     } else {
@@ -242,5 +252,17 @@ export class FormSelector implements FormComponent {
     }
 
     return false;
+  }
+
+  private checkTypeAhead(ch: string) {
+    this.typeAhead += ch.toLowerCase();
+    const choices = this.choices.map(text => text.toBland().toLowerCase());
+    const index = choices.findIndex(s => s.slice(0, this.typeAhead.length) == this.typeAhead);
+    if (index >= 0) {
+      this.display = index;
+      this.form?.redraw();
+    } else {
+      this.typeAhead = "";
+    }
   }
 }

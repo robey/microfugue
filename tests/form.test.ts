@@ -722,5 +722,51 @@ describe("Form", () => {
         `[1;14H${PALE_BLUE}${BLUE_BG}third [2;14Hfourth[3;15H${WHITE}ifth [8D`
       );
     });
+
+    it("type ahead selection", () => {
+      const choices = [ "first", "second", "third", "fourth" ].map(s => RichText.parse(s));
+
+      const canvas = new Canvas(30, 10);
+      const selector = new FormSelector(choices, [ 0 ]);
+      const text = new FormText(RichText.parse("no"));
+      const form = new Form(
+        canvas.all(),
+        [ { component: selector }, { component: text } ],
+        { left: GridLayout.fixed(10), labelSpacing: 2, verticalPadding: 2 },
+      );
+
+      form.feed(Key.normal(0, " "));
+      escpaint(canvas).should.eql(
+        `${CLEAR}[3;11H${PALE_BLUE}${BLUE_BG}▶${WHITE}✓ first  ${PALE_BLUE}◀` +
+        `[4;11H   second  ` +
+        `[5;11H   third   ` +
+        `[6;11H   fourth  ` +
+        `[3;12H`
+      );
+
+      form.feed(Key.normal(0, "t"));
+      escpaint(canvas).should.eql(
+        `[D ✓ first   ` +
+        `[5;11H▶${WHITE}  third  ${PALE_BLUE}◀` +
+        `[10D`
+      );
+
+      form.feed(Key.normal(0, "z"));
+      escpaint(canvas).should.eql("");
+
+      form.feed(Key.normal(0, "f"));
+      escpaint(canvas).should.eql(
+        `[3;11H▶${WHITE}✓ first  ${PALE_BLUE}◀` +
+        `[5;11H   third   ` +
+        `[3;12H`
+      );
+
+      form.feed(Key.normal(0, "o"));
+      escpaint(canvas).should.eql(
+        `[D ✓ first   ` +
+        `[6;11H▶${WHITE}  fourth ${PALE_BLUE}◀` +
+        `[10D`
+      );
+    });
   });
 });

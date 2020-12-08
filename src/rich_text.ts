@@ -104,11 +104,13 @@ export class RichText {
   }
 
   toString(): string {
-    const quote = (s: Span) => {
-      if (s instanceof RichText) return s.toString();
-      return RichText.quote(s);
-    };
+    const quote = (s: Span) => (s instanceof RichText) ? s.toString() : RichText.quote(s);
     return `{${this.color}:${this.spans.map(quote).join("")}}`;
+  }
+
+  toBland(): string {
+    const bland = (s: Span) => (s instanceof RichText) ? s.toBland() : s;
+    return this.spans.map(bland).join("");
   }
 
   get length(): number {
