@@ -189,19 +189,36 @@ export class FormEditBox implements FormComponent {
     this.editBox?.setText(text);
   }
 
+  allowBlur(): boolean {
+    if (!this.form) return true;
+    const rv = this.config.allowBlur?.(this, this.form) ?? true;
+    if (rv) {
+      // all good
+      if (this.isError) {
+        this.editBox?.reconfigure({ backgroundColor: this.focused ? this.config.focusColor : this.config.color });
+        this.isError = false;
+      }
+      return true;
+    } else {
+      // error!
+      if (!this.isError) {
+        this.editBox?.reconfigure({ backgroundColor: this.config.errorColor });
+        this.isError = true;
+      }
+      return false;
+    }
+  }
+
   // return true to remain focused
   shiftFocus(_direction: number): boolean {
-    if (!this.form) return false;
-    if (!this.config.allowBlur) return false;
-    if (this.config.allowBlur(this, this.form)) return false;
+    if (!this.form || this.allowBlur()) return false;
     if (this.editBox?.suggestionIndex !== undefined) {
       // accept the current suggestion
       this.editBox.feed(new Key(0, KeyType.Right));
-      if (this.config.allowBlur(this, this.form)) return false;
+      if (this.allowBlur()) return false;
     }
 
-    this.isError = true;
-    this.editBox?.reconfigure({ backgroundColor: this.config.errorColor });
+    // nope. error mode.
     return true;
   }
 }

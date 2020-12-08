@@ -68,6 +68,9 @@ export interface FormComponent {
 
   // has internal focus management? return true if focus should remain within this component.
   shiftFocus?(direction: number): boolean;
+
+  // control whether focus can leave? (invalid contents)
+  allowBlur?(): boolean;
 }
 
 // a form is composed of these fields, stacked vertically.
@@ -288,6 +291,10 @@ export class Form {
 
     this.fields[this.focus].component.takeFocus?.(direction);
     this.redraw();
+  }
+
+  allowBlur(): boolean {
+    return this.fields[this.focus].component.allowBlur?.() ?? true;
   }
 
   moveFocus(component: FormComponent) {

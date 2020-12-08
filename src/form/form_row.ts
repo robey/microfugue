@@ -56,6 +56,11 @@ export class FormRow implements FormComponent {
     this.focus = -1;
   }
 
+  allowBlur(): boolean {
+    if (this.focus < 0 || this.focus >= this.components.length) return true;
+    return this.components[this.focus].allowBlur?.() ?? true;
+  }
+
   // move focus between buttons
   shiftFocus(direction: number): boolean {
     if (this.focus < 0) return false;
