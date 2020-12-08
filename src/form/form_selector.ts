@@ -206,25 +206,30 @@ export class FormSelector implements FormComponent {
     this.config.onChanged?.(this, this.form);
   }
 
-  feed(key: Key) {
+  feed(key: Key): boolean {
     if (this.active) {
       if (key.modifiers == 0) {
         if (key.type == KeyType.Up) {
           if (this.display > 0) this.display--;
           this.form?.redraw();
+          return true;
         } else if (key.type == KeyType.Down) {
           if (this.display < this.choices.length - 1) this.display++;
           this.form?.redraw();
+          return true;
         } else if (key.key == " ") {
           this.select(this.display);
           this.form?.redraw();
+          return true;
         } else if (key.type == KeyType.Return) {
           if (!this.config.multiSelect) this.select(this.display);
           this.dropActive();
           this.form?.redraw();
+          return true;
         } else if (key.type == KeyType.Esc) {
           this.dropActive();
           this.form?.redraw();
+          return true;
         }
       }
     } else {
@@ -232,7 +237,10 @@ export class FormSelector implements FormComponent {
         this.active = true;
         this.yOffset = undefined;
         this.form?.redraw();
+        return true;
       }
     }
+
+    return false;
   }
 }

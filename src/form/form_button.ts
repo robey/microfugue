@@ -94,10 +94,12 @@ export class FormButton implements FormComponent {
     this.region.write(this.focused ? this.config.focusBadgeRight : lpad("", this.config.focusBadgeRight.length));
   }
 
-  feed(key: Key) {
-    if (!this.form) return;  // impossible
+  feed(key: Key): boolean {
+    if (!this.form) return false;  // impossible
     if (key.modifiers == 0 && (key.type == KeyType.Return || key.key == " ")) {
       this.onClick(this.form);
+      return true;
     }
+    return false;
   }
 }

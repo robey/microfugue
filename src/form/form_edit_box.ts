@@ -16,6 +16,7 @@ export interface FormEditBoxConfig {
   maxLength: number;
   minHeight: number;
   maxHeight: number;
+  constraint?: Constraint;
 
   // sometimes it can be easier to specify a static width
   oneLineWidth?: number;
@@ -79,7 +80,8 @@ export class FormEditBox implements FormComponent {
       this.config.maxLength = options.oneLineWidth;
     }
     this.height = this.config.minHeight;
-    this.constraint = GridLayout.stretchWithMinMax(1, this.config.minWidth, this.config.maxLength);
+    this.constraint = this.config.constraint ??
+      GridLayout.stretchWithMinMax(1, this.config.minWidth, this.config.maxLength);
   }
 
   takeFocus(_direction: number) {
@@ -162,15 +164,21 @@ export class FormEditBox implements FormComponent {
     }, 0);
   }
 
-  feed(key: Key) {
-    if (!this.form) return;
+  feed(key: Key): boolean {
+    if (!this.form) return false;
+    if (key.modifiers == 0 && key.type == KeyType.Return && this.config.enterAction == "ignore") {
+      this.form.next();
+      return true;
+    }
+
     if (this.isError) {
       this.editBox?.reconfigure({ backgroundColor: this.focused ? this.config.focusColor : this.config.color });
       this.isError = false;
     }
-    this.editBox?.feed(key);
+    const rv = this.editBox?.feed(key) ?? false;
     if (this.config.alwaysSuggest) this.editBox?.checkForSuggestions();
     this.config.onChange?.(this, this.form);
+    return rv;
   }
 
   get text(): string {

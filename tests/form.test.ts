@@ -433,6 +433,74 @@ describe("Form", () => {
       form.feed(new Key(0, KeyType.Right));
       escpaint(canvas).should.eql(`bit`);
     });
+
+    it("tabs on enter", () => {
+      const canvas = new Canvas(45, 8);
+      const button = new FormButton(RichText.parse("OK"), () => null);
+      const box = new FormEditBox("test", { minHeight: 1, maxHeight: 1, minWidth: 10, maxLength: 10 });
+      const form = new Form(
+        canvas.all(),
+        [ { component: box, label: "Gripes" }, { component: button } ],
+        { left: GridLayout.fixed(10) },
+      );
+
+      escpaint(canvas).should.eql(
+        `${CLEAR}[2;4H${WHITE}Gripes ` +
+        `${BLUE_BG}test      ` +
+        `[4;11H${NORMAL}  OK  ` +
+        `[2;15H`
+      );
+
+      form.feed(new Key(0, KeyType.Return));
+      escpaint(canvas).should.eql(
+        `[11D[40mGripes ` +
+        `${GRAY_BG}test      ` +
+        `[4;11H${FOCUS}▶ OK ◀` +
+        `[4D`
+      );
+    });
+
+    it("arrow navigation", () => {
+      const canvas = new Canvas(22, 8);
+      const button = new FormButton(RichText.parse("OK"), () => null);
+      const box = new FormEditBox("test some things", { minHeight: 2, maxHeight: 2, wordWrap: true });
+      const form = new Form(
+        canvas.all(),
+        [ { component: box, label: "Gripes" }, { component: button } ],
+        { left: GridLayout.fixed(10) },
+      );
+
+      form.feed(new Key(0, KeyType.Up));
+      escpaint(canvas).should.eql(
+        `${CLEAR}[2;4H${WHITE}Gripes ` +
+        `${BLUE_BG}test some  ` +
+        `[3;11Hthings     ` +
+        `[5;11H${NORMAL}  OK  ` +
+        `[3A`
+      );
+
+      form.feed(new Key(0, KeyType.Down));
+      escpaint(canvas).should.eql("[B");
+
+      form.feed(new Key(0, KeyType.Down));
+      escpaint(canvas).should.eql(
+        `[2;4H[40mGripes ${GRAY_BG}test some  ` +
+        `[3;11Hthings     ` +
+        `[5;11H${FOCUS}▶ OK ◀` +
+        `[4D`
+      );
+
+      form.feed(new Key(0, KeyType.Up));
+      escpaint(canvas).should.eql(
+        `[2;4H[40mGripes ${BLUE_BG}test some  ` +
+        `[3;11Hthings     ` +
+        `[5;11H${NORMAL}  OK  ` +
+        `[2A`
+      );
+
+      form.feed(new Key(0, KeyType.Up));
+      escpaint(canvas).should.eql("[A");
+    });
   });
 
 

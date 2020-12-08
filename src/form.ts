@@ -63,8 +63,8 @@ export interface FormComponent {
   takeFocus?(direction: number): void;
   loseFocus?(direction: number): void;
 
-  // will receive key events when focused
-  feed?(key: Key, form: Form): void;
+  // will receive key events when focused. returns true if key was handled.
+  feed?(key: Key, form: Form): boolean;
 
   // has internal focus management? return true if focus should remain within this component.
   shiftFocus?(direction: number): boolean;
@@ -218,7 +218,23 @@ export class Form {
     }
 
     const component = this.fields[this.focus].component;
-    if (component.feed) component.feed(key, this);
+    if (!component.feed?.(key, this)) {
+      // treat left/right as being the same as tab/S-tab.
+      // treat up/down as traversing rows.
+      if (key.modifiers == 0) {
+        switch (key.type) {
+          case KeyType.Right:
+            return this.next();
+          case KeyType.Left:
+            return this.prev();
+          case KeyType.Down:
+            return this.nextRow();
+          case KeyType.Up:
+            return this.prevRow();
+        }
+      }
+    }
+
     this.ensureFocus();
   }
 
@@ -290,6 +306,20 @@ export class Form {
 
   prev() {
     this.shiftFocus(-1);
+  }
+
+  nextRow() {
+    if (this.focus >= 0 && this.focus < this.fields.length) {
+      this.fields[this.focus].component.loseFocus?.(1);
+    }
+    this.shiftFocus(1, true);
+  }
+
+  prevRow() {
+    if (this.focus >= 0 && this.focus < this.fields.length) {
+      this.fields[this.focus].component.loseFocus?.(-1);
+    }
+    this.shiftFocus(-1, true);
   }
 
   clearBindings() {

@@ -148,8 +148,8 @@ export class FormRow implements FormComponent {
     for (const c of this.components) c.draw();
   }
 
-  feed(key: Key, form: Form) {
-    if (this.focus < 0) return;
-    this.components[this.focus].feed?.(key, form);
+  feed(key: Key, form: Form): boolean {
+    if (this.focus < 0) return false;
+    return this.components[this.focus].feed?.(key, form) ?? false;
   }
 }

@@ -343,10 +343,10 @@ export class EditBox {
     return this.text.slice(this.pos);
   }
 
-  feed(key: Key) {
+  feed(key: Key): boolean {
     for (const [ k, f ] of this.customBindings) if (key.equals(k)) {
       f(key, this);
-      return;
+      return true;
     }
 
     if (this.suggestionIndex !== undefined) {
@@ -358,85 +358,114 @@ export class EditBox {
     if (key.modifiers == 0) {
       switch (key.type) {
         case KeyType.Backspace:
-          return this.backspace();
+          this.backspace();
+          return true;
         case KeyType.Delete:
-          return this.deleteForward();
+          this.deleteForward();
+          return true;
         case KeyType.Tab:
-          return this.tab();
+          this.tab();
+          return true;
         case KeyType.Return:
-          return this.enter();
+          this.enter();
+          return true;
         case KeyType.Left:
-          return this.left();
+          this.left();
+          return true;
         case KeyType.Right:
-          return this.right();
+          this.right();
+          return true;
         case KeyType.Up:
           if (this.config.useHistory) {
-            return this.historyPrevious();
+            this.historyPrevious();
+            return true;
           } else {
             return this.scrollUp();
           }
         case KeyType.Down:
           if (this.config.useHistory) {
-            return this.historyNext();
+            this.historyNext();
+            return true;
           } else {
             return this.scrollDown();
           }
         case KeyType.Home:
-          return this.home();
+          this.home();
+          return true;
         case KeyType.End:
-          return this.end();
+          this.end();
+          return true;
         case KeyType.Normal:
-          return this.insert(key.key);
+          this.insert(key.key);
+          return true;
       }
     } else if (key.modifiers == Modifier.Control) {
       switch (key.type) {
         case KeyType.Left:
-          return this.wordLeft();
+          this.wordLeft();
+          return true;
         case KeyType.Right:
-          return this.wordRight();
+          this.wordRight();
+          return true;
         case KeyType.Up:
-          return this.scrollUp();
+          this.scrollUp();
+          return true;
         case KeyType.Down:
-          return this.scrollDown();
+          this.scrollDown();
+          return true;
         case KeyType.Normal:
           // look for unix editing keys
           switch (key.key) {
             case "A":
-              return this.home();
+              this.home();
+              return true;
             case "B":
-              return this.left();
+              this.left();
+              return true;
             case "D":
-              return this.deleteForward();
+              this.deleteForward();
+              return true;
             case "E":
-              return this.end();
+              this.end();
+              return true;
             case "F":
-              return this.right();
+              this.right();
+              return true;
             case "H":
-              return this.backspace();
+              this.backspace();
+              return true;
             case "J":
             case "M":
-              return this.enter();
+              this.enter();
+              return true;
             case "K":
-              return this.deleteToEol();
+              this.deleteToEol();
+              return true;
             case "N":
               if (this.config.useHistory) {
-                return this.historyNext();
+                this.historyNext();
+                return true;
               } else {
                 return this.scrollDown();
               }
             case "P":
               if (this.config.useHistory) {
-                return this.historyPrevious();
+                this.historyPrevious();
+                return true;
               } else {
                 return this.scrollUp();
               }
             case "T":
-              return this.transpose();
+              this.transpose();
+              return true;
             case "W":
-              return this.deleteWord();
+              this.deleteWord();
+              return true;
           }
       }
     }
+
+    return false;
   }
 
 
@@ -532,28 +561,32 @@ export class EditBox {
     this.moveCursor(pos);
   }
 
-  scrollUp() {
+  scrollUp(): boolean {
     if (this.region.rows == 1) {
       // scan left
+      if (this.pos == 0) return false;
       const stride = Math.floor(this.region.cols / 2);
       this.moveCursor(Math.max(this.pos - stride, 0));
     } else {
       const [ x, y ] = this.positionToCursor();
-      if (y == 0) return;
+      if (y == 0) return false;
       this.moveCursor(this.cursorToPosition(x, y - 1));
     }
+    return true;
   }
 
-  scrollDown() {
+  scrollDown(): boolean {
     if (this.region.rows == 1) {
       // scan right
+      if (this.pos == this.text.length) return false;
       const stride = Math.floor(this.region.cols / 2);
       this.moveCursor(Math.min(this.pos + stride, this.text.length));
     } else {
       const [ x, y ] = this.positionToCursor();
-      if (y == this.lines.length - 1) return;
+      if (y == this.lines.length - 1) return false;
       this.moveCursor(this.cursorToPosition(x, y + 1));
     }
+    return true;
   }
 
   home() {
